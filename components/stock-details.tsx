@@ -28,25 +28,31 @@ function generateFallbackChart(symbol: string, timeframe: Timeframe, currentPric
     "1Y": [52, 0.12],
     ALL: [100, 0.22],
   }
-  const [count, mult] = cfg[timeframe]
-  let seed = 0
-  for (let i = 0; i < symbol.length; i++) seed += symbol.charCodeAt(i)
+  const [count, vol] = cfg[timeframe]
+  let seed = 7
+  for (let i = 0; i < symbol.length; i++) seed = (seed * 31 + symbol.charCodeAt(i)) >>> 0
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    return seed / 4294967296
+  }
+  // Seeded random walk backwards from the current price (offline fallback only)
+  const step = vol / Math.sqrt(count)
   const data: Point[] = []
   let price = currentPrice
   const now = new Date()
-  for (let i = count - 1; i >= 0; i--) {
+  for (let i = 0; i < count; i++) {
     const d = new Date(now)
     if (timeframe === "1D") d.setHours(now.getHours() - i)
     else if (timeframe === "1Y") d.setDate(now.getDate() - i * 7)
     else if (timeframe === "ALL") d.setDate(now.getDate() - i * 30)
     else d.setDate(now.getDate() - i)
-    const v = Math.sin(seed + i * 17.3) * Math.cos(seed - i * 8.9)
-    price = Math.max(0.01, price - price * mult * (v + Math.sin(seed) * 0.04) * 0.12)
     const label =
       timeframe === "1D"
         ? d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
         : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: timeframe === "ALL" ? "numeric" : undefined })
     data.unshift({ date: label, price: Number(price.toFixed(2)) })
+    const shock = (rand() + rand() + rand() - 1.5) * 2 * step
+    price = Math.max(0.01, price * (1 - shock))
   }
   if (data.length) data[data.length - 1].price = Number(currentPrice.toFixed(2))
   return data
