@@ -6,21 +6,28 @@ import { AnimatePresence, motion } from "framer-motion"
 import { Sparkline } from "./sparkline"
 import { ChangePill, Glass, NumericText } from "./liquid-glass"
 import type { Stock } from "@/lib/stock-types"
+import { formatPercent, formatPrice } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
+export type WatchlistRow = { symbol: string; stock?: Stock; spark?: number[] }
+
 interface WatchlistTableProps {
-  stocks: Stock[]
-  selectedStockId: string | null
-  onSelectStock: (id: string) => void
-  onAddStock: (symbol: string, name: string) => void
-  onRemoveStock: (id: string) => void
+  rows: WatchlistRow[]
+  loaded: boolean
+  feedStatus: "connecting" | "live" | "stale" | "offline"
+  selectedSymbol: string | null
+  onSelectStock: (symbol: string) => void
+  onAddStock: (symbol: string) => void
+  onRemoveStock: (symbol: string) => void
 }
 
 const spring = { type: "spring", stiffness: 420, damping: 34, mass: 0.8 } as const
 
 export function WatchlistTable({
-  stocks,
-  selectedStockId,
+  rows,
+  loaded,
+  feedStatus,
+  selectedSymbol,
   onSelectStock,
   onAddStock,
   onRemoveStock,
@@ -51,11 +58,11 @@ export function WatchlistTable({
     return () => clearTimeout(timer)
   }, [newSymbol])
 
-  const filteredStocks = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
-    if (!q) return stocks
-    return stocks.filter((s) => s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
-  }, [stocks, searchQuery])
+    if (!q) return rows
+    return rows.filter((r) => r.symbol.toLowerCase().includes(q) || r.stock?.name.toLowerCase().includes(q))
+  }, [rows, searchQuery])
 
   const closeAdd = () => {
     setNewSymbol("")
@@ -63,9 +70,9 @@ export function WatchlistTable({
     setIsAdding(false)
   }
 
-  const handleAddStock = (symbol = newSymbol, name = "") => {
+  const handleAddStock = (symbol = newSymbol) => {
     if (!symbol.trim()) return
-    onAddStock(symbol.trim(), name)
+    onAddStock(symbol.trim())
     closeAdd()
   }
 
@@ -75,8 +82,10 @@ export function WatchlistTable({
       <div className="flex items-center justify-between px-2.5 pb-3 pt-2">
         <div className="flex flex-col leading-none">
           <h2 className="display text-[26px] font-bold">Watchlist</h2>
-          <span className="mt-1 text-[13px] text-label-2">
-            {stocks.length} {stocks.length === 1 ? "symbol" : "symbols"}
+          <span className={cn("mt-1 text-[13px]", feedStatus === "offline" ? "text-down" : "text-label-2")}>
+            {feedStatus === "offline"
+              ? "Market data unavailable"
+              : `${rows.length} ${rows.length === 1 ? "symbol" : "symbols"}`}
           </span>
         </div>
         <button
@@ -122,7 +131,7 @@ export function WatchlistTable({
                   <button
                     onClick={() => handleAddStock()}
                     disabled={!newSymbol.trim()}
-                    className="press h-8 shrink-0 rounded-full bg-tint px-3.5 text-[13px] font-semibold text-white disabled:opacity-30"
+                    className="press h-8 shrink-0 rounded-full bg-tint-fill px-3.5 text-[13px] font-semibold text-white disabled:opacity-30"
                   >
                     Add
                   </button>
@@ -144,7 +153,7 @@ export function WatchlistTable({
               {suggestions.map((item) => (
                 <button
                   key={item.symbol}
-                  onClick={() => handleAddStock(item.symbol, item.name)}
+                  onClick={() => handleAddStock(item.symbol)}
                   className="press flex w-full items-center justify-between gap-3 rounded-[16px] px-3 py-2.5 text-left hover:bg-selection"
                 >
                   <div className="flex min-w-0 flex-col leading-tight">
@@ -192,21 +201,36 @@ export function WatchlistTable({
         className="hide-scrollbar max-h-[440px] min-h-0 flex-1 overflow-y-auto lg:max-h-none"
       >
         <AnimatePresence initial={false}>
-          {filteredStocks.length > 0 ? (
-            filteredStocks.map((stock) => {
-              const isSelected = selectedStockId === stock.id
+          {filteredRows.length > 0 ? (
+            filteredRows.map(({ symbol, stock, spark }) => {
+              const isSelected = selectedSymbol === symbol
               return (
                 <motion.div
-                  key={stock.id}
+                  key={symbol}
                   layout="position"
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -16, transition: { duration: 0.18 } }}
                   transition={spring}
-                  onClick={() => onSelectStock(stock.id)}
+                  onClick={() => onSelectStock(symbol)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelectStock(stock.id)}
+                  aria-current={isSelected ? "true" : undefined}
+                  aria-keyshortcuts="Delete"
+                  aria-label={
+                    stock
+                      ? `${symbol}, ${stock.name}, ${formatPrice(stock.price)}, ${formatPercent(stock.changePercent)}`
+                      : `${symbol}, no quote yet`
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      onSelectStock(symbol)
+                    } else if (e.key === "Delete" || e.key === "Backspace") {
+                      e.preventDefault()
+                      onRemoveStock(symbol)
+                    }
+                  }}
                   className="group relative flex cursor-pointer items-center gap-3 rounded-[18px] px-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-tint/50"
                 >
                   {isSelected && (
@@ -217,33 +241,33 @@ export function WatchlistTable({
                   )}
 
                   <div className="relative flex min-w-0 flex-1 flex-col leading-tight">
-                    <span className="text-[15px] font-semibold">{stock.symbol}</span>
-                    <span className="truncate text-[12px] text-label-2">{stock.name}</span>
+                    <span className="text-[15px] font-semibold">{symbol}</span>
+                    <span className="truncate text-[12px] text-label-2">{stock?.name ?? "\u00a0"}</span>
                   </div>
 
                   <div className="pointer-events-none relative hidden shrink-0 sm:block lg:hidden xl:block">
-                    <Sparkline data={stock.sparkline} direction={stock.direction} width={58} height={26} strokeWidth={1.5} />
+                    <Sparkline data={spark} direction={stock?.direction ?? "flat"} width={58} height={26} strokeWidth={1.5} />
                   </div>
 
                   <div className="relative flex shrink-0 flex-col items-end gap-1 leading-none">
-                    <NumericText
-                      value={stock.price}
-                      format={(n) => n.toFixed(2)}
-                      className="text-[15px] font-semibold text-foreground"
-                    />
-                    <ChangePill direction={stock.direction} className="min-w-[64px]">
-                      {stock.changePercent >= 0 ? "+" : ""}
-                      {stock.changePercent.toFixed(2)}%
+                    {stock ? (
+                      <NumericText value={stock.price} format={formatPrice} className="text-[15px] font-semibold text-foreground" />
+                    ) : (
+                      <span className="num text-[15px] font-semibold text-label-2">—</span>
+                    )}
+                    <ChangePill direction={stock?.direction ?? "flat"} className="min-w-[64px]">
+                      {stock ? formatPercent(stock.changePercent) : "—"}
                     </ChangePill>
                   </div>
 
                   <button
+                    tabIndex={-1}
                     onClick={(e) => {
                       e.stopPropagation()
-                      onRemoveStock(stock.id)
+                      onRemoveStock(symbol)
                     }}
-                    className="press relative -mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-down text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-                    aria-label={`Remove ${stock.symbol}`}
+                    className="press relative -mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-down-fill text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                    aria-label={`Remove ${symbol}`}
                   >
                     <Minus className="h-3.5 w-3.5" strokeWidth={3} />
                   </button>
@@ -251,12 +275,12 @@ export function WatchlistTable({
               )
             })
           ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="py-12 text-center text-[13px] text-label-2"
-            >
-              {stocks.length === 0 ? "Loading watchlist…" : "No results"}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center text-[13px] text-label-2">
+              {!loaded
+                ? "Loading watchlist…"
+                : rows.length === 0
+                  ? "Your watchlist is empty. Tap + to add a symbol."
+                  : "No results"}
             </motion.div>
           )}
         </AnimatePresence>
