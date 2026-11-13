@@ -31,7 +31,7 @@ export const MARKETS: Market[] = [
   { id: "sa", name: "Saudi Arabia", exchange: "Tadawul", city: "Riyadh", region: "Middle East & Africa", timeZone: "Asia/Riyadh", days: [0, 1, 2, 3, 4], sessions: [["10:00", "15:00"]] },
   { id: "za", name: "South Africa", exchange: "JSE", city: "Johannesburg", region: "Middle East & Africa", timeZone: "Africa/Johannesburg", days: MON_FRI, sessions: [["09:00", "17:00"]] },
   { id: "in", name: "India", exchange: "NSE · BSE", city: "Mumbai", region: "Asia-Pacific", timeZone: "Asia/Kolkata", days: MON_FRI, sessions: [["09:15", "15:30"]] },
-  { id: "cn", name: "China", exchange: "SSE", city: "Shanghai", region: "Asia-Pacific", timeZone: "Asia/Shanghai", days: MON_FRI, sessions: [["09:30", "11:30"], ["13:00", "15:00"]] },
+  { id: "cn", name: "China", exchange: "SSE · SZSE", city: "Shanghai", region: "Asia-Pacific", timeZone: "Asia/Shanghai", days: MON_FRI, sessions: [["09:30", "11:30"], ["13:00", "15:00"]] },
   { id: "hk", name: "Hong Kong", exchange: "HKEX", city: "Hong Kong", region: "Asia-Pacific", timeZone: "Asia/Hong_Kong", days: MON_FRI, sessions: [["09:30", "12:00"], ["13:00", "16:00"]] },
   { id: "jp", name: "Japan", exchange: "TSE", city: "Tokyo", region: "Asia-Pacific", timeZone: "Asia/Tokyo", days: MON_FRI, sessions: [["09:00", "11:30"], ["12:30", "15:30"]] },
   { id: "kr", name: "South Korea", exchange: "KRX", city: "Seoul", region: "Asia-Pacific", timeZone: "Asia/Seoul", days: MON_FRI, sessions: [["09:00", "15:30"]] },
