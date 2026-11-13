@@ -3,13 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Check, ChevronDown, Plus, X } from "lucide-react"
-import { Sparkline } from "./sparkline"
 import { NumericText } from "./liquid-glass"
 import { Sheet, SheetSearch } from "./sheet"
 import { MAX_INDICES, defaultIndexesFor, indexMeta, indexesFor, type IndexMeta } from "@/lib/indices"
 import { DEFAULT_MARKET, MARKETS, getMarketStatus, marketById, type LiveSession } from "@/lib/markets"
 import { cn } from "@/lib/utils"
-import { fetchQuotes, fetchSparks } from "@/lib/stock-data"
+import { fetchQuotes } from "@/lib/stock-data"
 import { formatPercent, formatPrice, formatSigned } from "@/lib/format"
 import { usePoll } from "@/hooks/use-poll"
 import type { Stock } from "@/lib/stock-types"
@@ -41,7 +40,6 @@ export function MarketBar() {
   // Each market keeps its own index selection
   const [selectionByMarket, setSelectionByMarket] = useState<Record<string, string[]>>({})
   const [quotes, setQuotes] = useState<Record<string, IndexData>>({})
-  const [sparks, setSparks] = useState<Record<string, number[]>>({})
   const [live, setLive] = useState<{ at: number; byMarket: Record<string, LiveSession> } | null>(null)
   const [failed, setFailed] = useState(false)
   const [indexPickerOpen, setIndexPickerOpen] = useState(false)
@@ -94,17 +92,6 @@ export function MarketBar() {
       return !result.stale
     },
     12_000,
-    selectedKey,
-  )
-
-  usePoll(
-    async () => {
-      if (!selected.length) return true
-      const result = await fetchSparks(selected)
-      if (result) setSparks((prev) => ({ ...prev, ...result }))
-      return !!result
-    },
-    120_000,
     selectedKey,
   )
 
@@ -202,7 +189,7 @@ export function MarketBar() {
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={spring}
               >
-                <IndexCell meta={indexMeta(market.id, symbol)!} data={quotes[symbol]} spark={sparks[symbol]} failed={failed} onRemove={() => removeIndex(symbol)} />
+                <IndexCell meta={indexMeta(market.id, symbol)!} data={quotes[symbol]} failed={failed} onRemove={() => removeIndex(symbol)} />
               </motion.div>
             ))}
 
@@ -243,13 +230,11 @@ export function MarketBar() {
 function IndexCell({
   meta,
   data,
-  spark,
   failed,
   onRemove,
 }: {
   meta: IndexMeta
   data?: IndexData
-  spark?: number[]
   failed: boolean
   onRemove: () => void
 }) {
@@ -287,11 +272,6 @@ function IndexCell({
         )}
       </div>
 
-      {data && (
-        <div className="hidden shrink-0 xl:block">
-          <Sparkline data={spark} direction={data.direction} width={64} height={30} strokeWidth={1.5} />
-        </div>
-      )}
 
       <button
         onClick={onRemove}

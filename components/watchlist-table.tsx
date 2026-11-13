@@ -3,13 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Plus, Search, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Sparkline } from "./sparkline"
 import { ChangePill, Glass, NumericText } from "./liquid-glass"
 import type { Stock } from "@/lib/stock-types"
 import { formatPercent, formatPrice } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-export type WatchlistRow = { symbol: string; stock?: Stock; spark?: number[] }
+export type WatchlistRow = { symbol: string; stock?: Stock }
 
 interface WatchlistTableProps {
   rows: WatchlistRow[]
@@ -202,7 +201,7 @@ export function WatchlistTable({
       >
         <AnimatePresence initial={false}>
           {filteredRows.length > 0 ? (
-            filteredRows.map(({ symbol, stock, spark }) => {
+            filteredRows.map(({ symbol, stock }) => {
               const isSelected = selectedSymbol === symbol
               return (
                 <motion.div
@@ -243,10 +242,6 @@ export function WatchlistTable({
                   <div className="relative flex min-w-0 flex-1 flex-col leading-tight">
                     <span className="text-[15px] font-semibold">{symbol}</span>
                     <span className="truncate text-[12px] text-label-2">{stock?.name ?? "\u00a0"}</span>
-                  </div>
-
-                  <div className="pointer-events-none relative hidden shrink-0 sm:block lg:hidden xl:block">
-                    <Sparkline data={spark} direction={stock?.direction ?? "flat"} width={58} height={26} strokeWidth={1.5} />
                   </div>
 
                   <div className="relative flex shrink-0 flex-col items-end gap-1 leading-none">

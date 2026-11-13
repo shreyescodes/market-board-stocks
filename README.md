@@ -16,7 +16,7 @@ Screenshots: add these files, then uncomment the image lines below.
 
 ## Features
 
-- **Watchlist sidebar.** Twelve default symbols with price, daily change and an intraday trend line. Search the list, add any ticker through Yahoo Finance autocomplete, or remove one with the × button that appears on hover (or the Delete key), with **Undo** in the notification. Your watchlist is saved in the browser.
+- **Watchlist sidebar.** Twelve default symbols with price and daily change. Search the list, add any ticker through Yahoo Finance autocomplete, or remove one with the × button that appears on hover (or the Delete key), with **Undo** in the notification. Your watchlist is saved in the browser.
 - **Detail view.** A large price header, a 1D / 1W / 1M / 3M / 1Y / ALL range control, and a price chart with a time axis and volume bars. Moving the pointer across the chart shows the price, change and time at that point in the header, the way Apple's Stocks app does.
   - **1D:** shows the latest regular trading session, with a dotted line at the official previous close.
   - **Times:** all chart times are in the exchange's own time zone.
@@ -61,14 +61,12 @@ All market data comes from Yahoo Finance through [`yahoo-finance2`](https://gith
 | Chart history for every range | Live Yahoo chart data, regular-session bars only |
 | Pre-market and after-hours prices | Live Yahoo quote |
 | Ticker search | Live Yahoo search |
-| Trend lines in the watchlist and index strip | Live Yahoo intraday data for the latest session |
 | Market open/closed status | **Computed** from each exchange's hours and holiday rules, then **checked live** against Yahoo's session state for the market's main index |
 
 **The app never invents data.** If Yahoo can't be reached, the last real prices stay on screen unchanged and the toolbar says **Reconnecting** with the time of the last good update. If there is no data at all, prices show "—" and the toolbar says **Offline**. A chart with no data shows an empty state with a **Try Again** button.
 
 **Refresh rates:**
 - Quotes every 10 seconds and index levels every 12 seconds, each as a single batched request.
-- Trend lines every 2 minutes.
 - The open 1D chart every minute.
 
 The server caches results briefly, so several open tabs don't multiply the load on Yahoo. Refreshing slows down while the feed is failing and pauses while the tab is hidden.
@@ -102,7 +100,6 @@ The front end talks only to `GET /api/stocks`:
 | --- | --- |
 | `?action=quotes&symbols=AAPL,^GSPC` | Quotes, fundamentals, session state and extended-hours prices. `stale: true` means Yahoo is unreachable and these are the last good values |
 | `?action=chart&symbol=AAPL&timeframe=1M` | Price and volume history for `1D`, `1W`, `1M`, `3M`, `1Y` or `ALL`, with the exchange's time zone |
-| `?action=sparks&symbols=AAPL,MSFT` | Intraday trend-line points for the latest session |
 | `?action=search&query=netflix` | Up to five matching stocks or ETFs |
 
 ## Project structure
@@ -120,14 +117,13 @@ components/
   market-bar.tsx          Market-status tile, index strip and both pickers
   liquid-glass.tsx        Glass surface, edge refraction, rolling numbers, change pill
   sheet.tsx               Glass sheet used by the pickers
-  sparkline.tsx           Mini trend line
 hooks/
   use-poll.ts             Polling with back-off that pauses in hidden tabs
 lib/
   indices.ts              Indexes for each market, with their exchange
   markets.ts              Exchange hours and the open/closed status logic
   holidays.ts             Holiday and early-close calendars computed from exchange rules
-  stock-data.ts           Client fetch helpers (quotes, charts, trend lines)
+  stock-data.ts           Client fetch helpers (quotes, charts)
   format.ts               Price, money and time formatting per currency and time zone
   stock-types.ts
 ```
