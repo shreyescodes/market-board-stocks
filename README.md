@@ -22,7 +22,9 @@ Screenshots: add these files, then uncomment the image lines below.
   - **Times:** all chart times are in the exchange's own time zone.
 - **Freshness.** Under the price you'll see when the quote is from and the market session, for example "As of 3:12 PM EST · Market open". If the quote falls behind during trading you'll see how far ("6 min behind"). Pre-market and after-hours prices appear when Yahoo has them.
 - **Fundamentals.** Open, high, low, previous close, volume, average volume, market cap, P/E, EPS, dividend yield and the 52-week range, all taken from the live quote.
-- **World market hours.** The first tile shows whether a market is open, in pre-market, after hours, on a lunch break or closed, with a countdown and a progress bar for the session. Tap it to see 16 markets worldwide with their local time and status, and pick one.
+- **World market hours.** The first tile shows whether a market is open, in pre-market, after hours, on a lunch break, closed or on holiday. It includes a countdown and a progress bar for the session. Tap it to see 16 markets worldwide with their local time and status, and pick one.
+  - **Holidays and early closes** are built in: "Holiday · Thanksgiving Day · Pre-market Fri 4:00 AM", "Early close in 1h 30m".
+  - **Countdowns skip holidays,** so on the Friday before Martin Luther King Jr. Day the US shows "Pre-market Tue 4:00 AM".
 - **Indexes that follow the market.** The strip next to the tile shows up to three indexes for the market you picked: Dow Jones, S&P 500 and Nasdaq for the United States; Nifty 50 (NSE) and Sensex (BSE) for India; FTSE 100 for the UK; Nikkei 225 for Japan; and so on, 44 indexes in all. Tap **Add Index** to choose from that market's list, which shows the exchange each index belongs to, and **×** to remove one. Each market remembers its own choice in the browser.
 - **Light and dark appearance.** Follows your system setting on load. The sun/moon button switches it.
 - **Responsive layout.** On a phone the sidebar stacks above the chart and the index strip scrolls sideways.
@@ -60,7 +62,7 @@ All market data comes from Yahoo Finance through [`yahoo-finance2`](https://gith
 | Pre-market and after-hours prices | Live Yahoo quote |
 | Ticker search | Live Yahoo search |
 | Trend lines in the watchlist and index strip | Live Yahoo intraday data for the latest session |
-| Market open/closed status | **Computed** from each exchange's regular hours and time zone. Exchange holidays are not included |
+| Market open/closed status | **Computed** from each exchange's hours and holiday rules, then **checked live** against Yahoo's session state for the market's main index |
 
 **The app never invents data.** If Yahoo can't be reached, the last real prices stay on screen unchanged and the toolbar says **Reconnecting** with the time of the last good update. If there is no data at all, prices show "—" and the toolbar says **Offline**. A chart with no data shows an empty state with a **Try Again** button.
 
@@ -124,6 +126,7 @@ hooks/
 lib/
   indices.ts              Indexes for each market, with their exchange
   markets.ts              Exchange hours and the open/closed status logic
+  holidays.ts             Holiday and early-close calendars computed from exchange rules
   stock-data.ts           Client fetch helpers (quotes, charts, trend lines)
   format.ts               Price, money and time formatting per currency and time zone
   stock-types.ts
@@ -140,6 +143,10 @@ lib/
 
 ## Limitations
 
-- Market status uses regular trading hours only. On exchange holidays a market can show as open when it is actually closed.
+- **Two kinds of holiday coverage:**
+  - **Rule-based calendars** cover 10 markets: the US, Canada, Brazil, the UK, Germany, France, Switzerland, South Africa, Australia and Japan.
+  - **Live status only** for China, Hong Kong, India, South Korea, Singapore and Saudi Arabia. Their holidays come from lunar or religious calendars announced each year, so on the day these markets show **Closed Today** once Yahoo confirms there has been no trading, but countdowns before the holiday don't account for it.
+- **Unpredictable closures:** rules can't foresee one-off closures such as state funerals or emergencies. The live check catches those on the day.
+- **Clock changes:** countdowns that span a daylight-saving change can be off by an hour.
 - Edge refraction works only in Chromium browsers.
 - Your watchlist, market and index choices are saved only in this browser.
