@@ -9,16 +9,21 @@
    floating navigation/control layer (toolbar, sidebar, controls).
    ─────────────────────────────────────────────────────────── */
 :root {
-  --up: #34c759;
-  --down: #ff3b30;
-  --tint: #007aff;
-  --warn: #ff9500;
+  /* Accessible variants: text ≥ 4.5:1 on white; white text on *-fill ≥ 4.5:1 */
+  --up: #1e7b34;
+  --down: #d70015;
+  --up-fill: #1e7b34;
+  --down-fill: #d70015;
+  --flat-fill: #6e6e73;
+  --tint: #0066cc;
+  --tint-fill: #0066cc;
+  --warn: #c93400;
 
   --bg: #ffffff;
   --surface: #f2f2f7; /* secondarySystemBackground */
   --label: #000000;
-  --label-2: rgba(60, 60, 67, 0.6);
-  --label-3: rgba(60, 60, 67, 0.3);
+  --label-2: rgba(60, 60, 67, 0.78);
+  --label-3: rgba(60, 60, 67, 0.3); /* decorative only, never text */
   --separator: rgba(60, 60, 67, 0.16);
   --fill: rgba(120, 120, 128, 0.12); /* systemFill (controls on glass) */
   --fill-hover: rgba(120, 120, 128, 0.18);
@@ -52,7 +57,7 @@
   --destructive-foreground: var(--down);
   --border: var(--separator);
   --input: var(--separator);
-  --ring: rgba(0, 122, 255, 0.5);
+  --ring: rgba(0, 102, 204, 0.5);
   --radius: 1rem;
 
   --font-apple: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI",
@@ -63,7 +68,11 @@
 .dark {
   --up: #30d158;
   --down: #ff453a;
+  --up-fill: #1e7b34;
+  --down-fill: #d70015;
+  --flat-fill: #636366;
   --tint: #0a84ff;
+  --tint-fill: #0071e3;
   --warn: #ff9f0a;
 
   --bg: #000000;
@@ -112,6 +121,10 @@
   --color-up: var(--up);
   --color-down: var(--down);
   --color-tint: var(--tint);
+  --color-tint-fill: var(--tint-fill);
+  --color-up-fill: var(--up-fill);
+  --color-down-fill: var(--down-fill);
+  --color-flat-fill: var(--flat-fill);
   --color-warn: var(--warn);
   --color-surface: var(--surface);
   --color-separator: var(--separator);

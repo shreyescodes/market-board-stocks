@@ -16,8 +16,11 @@ Screenshots: add these files, then uncomment the image lines below.
 
 ## Features
 
-- **Watchlist sidebar.** Twelve default symbols with price, daily change and a mini trend line. Search the list, add any ticker through Yahoo Finance autocomplete, or remove one with the red minus button.
-- **Detail view.** A large price header, a 1D / 1W / 1M / 3M / 1Y / ALL range control and an area chart. Moving the pointer across the chart shows the price and change at that point in the header, the way Apple's Stocks app does. The 1D chart draws a dotted line at the previous close.
+- **Watchlist sidebar.** Twelve default symbols with price, daily change and an intraday trend line. Search the list, add any ticker through Yahoo Finance autocomplete, or remove one with the red minus button (or the Delete key), with **Undo** in the notification. Your watchlist is saved in the browser.
+- **Detail view.** A large price header, a 1D / 1W / 1M / 3M / 1Y / ALL range control, and a price chart with a time axis and volume bars. Moving the pointer across the chart shows the price, change and time at that point in the header, the way Apple's Stocks app does.
+  - **1D:** shows the latest regular trading session, with a dotted line at the official previous close.
+  - **Times:** all chart times are in the exchange's own time zone.
+- **Freshness.** Under the price you'll see when the quote is from and the market session, for example "As of 3:12 PM EST · Market open". If the quote falls behind during trading you'll see how far ("6 min behind"). Pre-market and after-hours prices appear when Yahoo has them.
 - **Fundamentals.** Open, high, low, previous close, volume, average volume, market cap, P/E, EPS, dividend yield and the 52-week range, all taken from the live quote.
 - **World market hours.** The first tile shows whether a market is open, in pre-market, after hours, on a lunch break or closed, with a countdown and a progress bar for the session. Tap it to see 16 markets worldwide with their local time and status, and pick one.
 - **Indexes that follow the market.** The strip next to the tile shows up to three indexes for the market you picked: Dow Jones, S&P 500 and Nasdaq for the United States; Nifty 50 (NSE) and Sensex (BSE) for India; FTSE 100 for the UK; Nikkei 225 for Japan; and so on, 44 indexes in all. Tap **Add Index** to choose from that market's list, which shows the exchange each index belongs to, and **×** to remove one. Each market remembers its own choice in the browser.
@@ -53,12 +56,20 @@ All market data comes from Yahoo Finance through [`yahoo-finance2`](https://gith
 | Volume, average volume, market cap, 52-week range | Live Yahoo quote |
 | P/E, EPS, dividend yield, exchange, currency | Live Yahoo quote |
 | Index levels (`^DJI`, `^NSEI`, `^BSESN`, `^N225`, …) | Live Yahoo quote for the real index |
-| Chart history for every range | Live Yahoo chart data |
+| Chart history for every range | Live Yahoo chart data, regular-session bars only |
+| Pre-market and after-hours prices | Live Yahoo quote |
 | Ticker search | Live Yahoo search |
-| Mini trend lines in the watchlist and index strip | **Derived.** Drawn from the day's open, high, low and current price, not real intraday ticks |
+| Trend lines in the watchlist and index strip | Live Yahoo intraday data for the latest session |
 | Market open/closed status | **Computed** from each exchange's regular hours and time zone. Exchange holidays are not included |
 
-The app checks for new quotes every 10 seconds and new index levels every 12 seconds. If Yahoo is unreachable or rate-limits the server, the app switches to simulated prices so it still works offline. The toolbar then shows **Simulated** in place of **Live**, and a notification tells you the live feed is unavailable.
+**The app never invents data.** If Yahoo can't be reached, the last real prices stay on screen unchanged and the toolbar says **Reconnecting** with the time of the last good update. If there is no data at all, prices show "—" and the toolbar says **Offline**. A chart with no data shows an empty state with a **Try Again** button.
+
+**Refresh rates:**
+- Quotes every 10 seconds and index levels every 12 seconds, each as a single batched request.
+- Trend lines every 2 minutes.
+- The open 1D chart every minute.
+
+The server caches results briefly, so several open tabs don't multiply the load on Yahoo. Refreshing slows down while the feed is failing and pauses while the tab is hidden.
 
 Yahoo Finance has no official public API, so `yahoo-finance2` depends on unofficial endpoints. Heavy use can be rate-limited for a while.
 
@@ -87,8 +98,9 @@ The front end talks only to `GET /api/stocks`:
 
 | Query | Returns |
 | --- | --- |
-| `?action=quotes&symbols=AAPL,^GSPC` | Quotes and fundamentals for each symbol |
-| `?action=chart&symbol=AAPL&timeframe=1M` | Price history for `1D`, `1W`, `1M`, `3M`, `1Y` or `ALL` |
+| `?action=quotes&symbols=AAPL,^GSPC` | Quotes, fundamentals, session state and extended-hours prices. `stale: true` means Yahoo is unreachable and these are the last good values |
+| `?action=chart&symbol=AAPL&timeframe=1M` | Price and volume history for `1D`, `1W`, `1M`, `3M`, `1Y` or `ALL`, with the exchange's time zone |
+| `?action=sparks&symbols=AAPL,MSFT` | Intraday trend-line points for the latest session |
 | `?action=search&query=netflix` | Up to five matching stocks or ETFs |
 
 ## Project structure
@@ -107,10 +119,13 @@ components/
   liquid-glass.tsx        Glass surface, edge refraction, rolling numbers, change pill
   sheet.tsx               Glass sheet used by the pickers
   sparkline.tsx           Mini trend line
+hooks/
+  use-poll.ts             Polling with back-off that pauses in hidden tabs
 lib/
   indices.ts              Indexes for each market, with their exchange
   markets.ts              Exchange hours and the open/closed status logic
-  stock-data.ts           Client fetch helpers and the offline simulation
+  stock-data.ts           Client fetch helpers (quotes, charts, trend lines)
+  format.ts               Price, money and time formatting per currency and time zone
   stock-types.ts
 ```
 
@@ -126,6 +141,5 @@ lib/
 ## Limitations
 
 - Market status uses regular trading hours only. On exchange holidays a market can show as open when it is actually closed.
-- The watchlist and index-strip trend lines are drawn from daily figures, not real intraday data.
 - Edge refraction works only in Chromium browsers.
-- Your watchlist itself is not saved. Reloading the page restores the twelve default symbols. Only the chosen market and each market's indexes persist.
+- Your watchlist, market and index choices are saved only in this browser.

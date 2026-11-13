@@ -210,9 +210,9 @@ export function ChangePill({
     <span
       className={cn(
         "num inline-flex items-center justify-end rounded-[7px] px-1.5 py-[3px] text-[12px] font-semibold leading-none text-white transition-colors duration-500",
-        direction === "up" && "bg-up",
-        direction === "down" && "bg-down",
-        direction === "flat" && "bg-[#8e8e93]",
+        direction === "up" && "bg-up-fill",
+        direction === "down" && "bg-down-fill",
+        direction === "flat" && "bg-flat-fill",
         className,
       )}
       style={{
