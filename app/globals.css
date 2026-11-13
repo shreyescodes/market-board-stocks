@@ -1,0 +1,268 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ───────────────────────────────────────────────────────────
+   Apple system palette + Liquid Glass material
+   Content sits on a plain background; glass is reserved for the
+   floating navigation/control layer (toolbar, sidebar, controls).
+   ─────────────────────────────────────────────────────────── */
+:root {
+  --up: #34c759;
+  --down: #ff3b30;
+  --tint: #007aff;
+  --warn: #ff9500;
+
+  --bg: #ffffff;
+  --surface: #f2f2f7; /* secondarySystemBackground */
+  --label: #000000;
+  --label-2: rgba(60, 60, 67, 0.6);
+  --label-3: rgba(60, 60, 67, 0.3);
+  --separator: rgba(60, 60, 67, 0.16);
+  --fill: rgba(120, 120, 128, 0.12); /* systemFill (controls on glass) */
+  --fill-hover: rgba(120, 120, 128, 0.18);
+
+  /* Glass */
+  --glass: rgba(242, 242, 246, 0.66);
+  --glass-solid: rgba(250, 250, 252, 0.86);
+  --glass-edge: rgba(0, 0, 0, 0.08);
+  --glass-hi: rgba(255, 255, 255, 1);
+  --glass-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.16), 0 2px 6px -2px rgba(0, 0, 0, 0.06);
+  --glass-thumb: #ffffff;
+  --glass-thumb-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --selection: rgba(120, 120, 128, 0.14);
+
+  /* shadcn compatibility */
+  --background: var(--bg);
+  --foreground: var(--label);
+  --card: var(--surface);
+  --card-foreground: var(--label);
+  --popover: var(--glass-solid);
+  --popover-foreground: var(--label);
+  --primary: var(--tint);
+  --primary-foreground: #ffffff;
+  --secondary: var(--fill);
+  --secondary-foreground: var(--label);
+  --muted: var(--fill);
+  --muted-foreground: var(--label-2);
+  --accent: var(--fill);
+  --accent-foreground: var(--label);
+  --destructive: var(--down);
+  --destructive-foreground: var(--down);
+  --border: var(--separator);
+  --input: var(--separator);
+  --ring: rgba(0, 122, 255, 0.5);
+  --radius: 1rem;
+
+  --font-apple: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI",
+    system-ui, sans-serif;
+  --font-apple-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+}
+
+.dark {
+  --up: #30d158;
+  --down: #ff453a;
+  --tint: #0a84ff;
+  --warn: #ff9f0a;
+
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --label: #ffffff;
+  --label-2: rgba(235, 235, 245, 0.6);
+  --label-3: rgba(235, 235, 245, 0.3);
+  --separator: rgba(84, 84, 88, 0.55);
+  --fill: rgba(120, 120, 128, 0.24);
+  --fill-hover: rgba(120, 120, 128, 0.32);
+
+  --glass: rgba(30, 30, 32, 0.58);
+  --glass-solid: rgba(36, 36, 38, 0.86);
+  --glass-edge: rgba(255, 255, 255, 0.1);
+  --glass-hi: rgba(255, 255, 255, 0.22);
+  --glass-shadow: 0 12px 36px -10px rgba(0, 0, 0, 0.8), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --glass-thumb: rgba(118, 118, 128, 0.42);
+  --glass-thumb-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.14), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --selection: rgba(255, 255, 255, 0.1);
+
+  --ring: rgba(10, 132, 255, 0.6);
+}
+
+@theme inline {
+  --font-sans: var(--font-apple);
+  --font-mono: var(--font-apple-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --color-tint: var(--tint);
+  --color-warn: var(--warn);
+  --color-surface: var(--surface);
+  --color-separator: var(--separator);
+  --color-label-2: var(--label-2);
+  --color-label-3: var(--label-3);
+  --color-fill: var(--fill);
+  --color-fill-hover: var(--fill-hover);
+  --color-selection: var(--selection);
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body {
+    background: var(--bg);
+  }
+  body {
+    color: var(--label);
+    font-family: var(--font-apple);
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--tint) 30%, transparent);
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--label-3);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  /* Floating glass: toolbar, sidebar, popovers */
+  .glass {
+    position: relative;
+    isolation: isolate;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+    box-shadow:
+      inset 0 0 0 0.5px var(--glass-edge),
+      var(--glass-shadow);
+  }
+  .glass-solid {
+    background: var(--glass-solid);
+  }
+  /* Specular edge: a thin highlight that is brightest along the top lip */
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 0.5px;
+    background: linear-gradient(180deg, var(--glass-hi), transparent 35%, transparent 75%, var(--glass-edge));
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Controls sitting on glass or content (search fields, segmented tracks, round buttons) */
+  .fill {
+    background: var(--fill);
+  }
+
+  /* Segmented control / selection thumb */
+  .glass-thumb {
+    background: var(--glass-thumb);
+    box-shadow: var(--glass-thumb-shadow);
+  }
+
+  .press {
+    transition:
+      transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2),
+      background-color 0.2s ease,
+      color 0.2s ease,
+      opacity 0.2s ease;
+  }
+  .press:active {
+    transform: scale(0.95);
+    transition-duration: 0.1s;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .display {
+    font-family: "SF Pro Display", var(--font-apple);
+    letter-spacing: -0.022em;
+  }
+}
+
+/* Sonner toasts as glass notifications */
+[data-sonner-toaster] [data-sonner-toast].liquid-toast {
+  background: var(--glass-solid);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  color: var(--label);
+  border: 0;
+  border-radius: 20px;
+  box-shadow:
+    inset 0 0 0 0.5px var(--glass-edge),
+    var(--glass-shadow);
+  font-family: var(--font-apple);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 13px 16px;
+}
+[data-sonner-toaster] [data-sonner-toast].liquid-toast [data-icon] {
+  color: var(--label-2);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="success"].liquid-toast [data-icon] {
+  color: var(--up);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="error"].liquid-toast [data-icon] {
+  color: var(--down);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press:active {
+    transform: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--glass-solid);
+  }
+}
