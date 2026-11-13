@@ -2,17 +2,9 @@
 
 A live stock watchlist with an Apple-style Liquid Glass interface, built with Next.js. Quotes, charts, index levels and ticker search come from Yahoo Finance through a small server route, so no API key is needed.
 
-<!--
-Screenshots: add these files, then uncomment the image lines below.
-  docs/screenshots/dark.png          full window, dark appearance
-  docs/screenshots/light.png         full window, light appearance
-  docs/screenshots/index-picker.png  the index sheet open (e.g. India Indexes)
-  docs/screenshots/world-markets.png the World Markets sheet open
-  docs/screenshots/mobile.png        phone width
+![MarketBoard in dark mode: watchlist, US market status, index strip and the AAPL intraday chart](docs/screenshots/dark.png)
 
-![MarketBoard in dark mode](docs/screenshots/dark.png)
 ![MarketBoard in light mode](docs/screenshots/light.png)
--->
 
 ## Features
 
@@ -29,15 +21,15 @@ Screenshots: add these files, then uncomment the image lines below.
 - **Light and dark appearance.** Follows your system setting on load. The sun/moon button switches it.
 - **Responsive layout.** On a phone the sidebar stacks above the chart and the index strip scrolls sideways.
 
-<!--
 | Choose indexes | World market hours |
 | --- | --- |
-| ![Add Index sheet](docs/screenshots/index-picker.png) | ![World Markets sheet](docs/screenshots/world-markets.png) |
+| ![United States Indexes sheet with Dow Jones and S&P 500 selected](docs/screenshots/index-picker.png) | ![World Markets sheet listing exchanges with live open/closed status](docs/screenshots/world-markets.png) |
 
 <p align="center">
-  <img src="docs/screenshots/mobile.png" alt="MarketBoard on a phone" width="320" />
+  <img src="docs/screenshots/mobile.png" alt="MarketBoard on a phone, showing the AAPL chart" width="320" />
 </p>
--->
+
+<sub>Screenshots taken from the running app with live Yahoo Finance data on November 13, 2026, during the US session.</sub>
 
 ## Design
 
