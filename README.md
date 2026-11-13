@@ -16,7 +16,7 @@ Screenshots: add these files, then uncomment the image lines below.
 
 ## Features
 
-- **Watchlist sidebar.** Twelve default symbols with price, daily change and an intraday trend line. Search the list, add any ticker through Yahoo Finance autocomplete, or remove one with the red minus button (or the Delete key), with **Undo** in the notification. Your watchlist is saved in the browser.
+- **Watchlist sidebar.** Twelve default symbols with price, daily change and an intraday trend line. Search the list, add any ticker through Yahoo Finance autocomplete, or remove one with the × button that appears on hover (or the Delete key), with **Undo** in the notification. Your watchlist is saved in the browser.
 - **Detail view.** A large price header, a 1D / 1W / 1M / 3M / 1Y / ALL range control, and a price chart with a time axis and volume bars. Moving the pointer across the chart shows the price, change and time at that point in the header, the way Apple's Stocks app does.
   - **1D:** shows the latest regular trading session, with a dotted line at the official previous close.
   - **Times:** all chart times are in the exchange's own time zone.

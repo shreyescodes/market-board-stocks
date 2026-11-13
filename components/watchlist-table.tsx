@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Plus, Search, X, Minus } from "lucide-react"
+import { Plus, Search, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Sparkline } from "./sparkline"
 import { ChangePill, Glass, NumericText } from "./liquid-glass"
@@ -266,10 +266,10 @@ export function WatchlistTable({
                       e.stopPropagation()
                       onRemoveStock(symbol)
                     }}
-                    className="press relative -mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-down-fill text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                    className="press relative -mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 opacity-0 transition-opacity hover:bg-fill-hover hover:text-foreground group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
                     aria-label={`Remove ${symbol}`}
                   >
-                    <Minus className="h-3.5 w-3.5" strokeWidth={3} />
+                    <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                   </button>
                 </motion.div>
               )
