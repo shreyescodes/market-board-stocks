@@ -6,13 +6,25 @@ import { Moon, Sun } from "lucide-react"
 import { useRefraction } from "./liquid-glass"
 import { cn } from "@/lib/utils"
 
+export type FeedState = {
+  status: "connecting" | "live" | "stale" | "offline"
+  lastUpdate: number | null
+}
+
 interface HeaderProps {
   theme: "dark" | "light"
-  live: boolean
+  feed: FeedState
   onToggleTheme: () => void
 }
 
-export function Header({ theme, live, onToggleTheme }: HeaderProps) {
+const FEED_COPY: Record<FeedState["status"], { label: string; dot: string }> = {
+  connecting: { label: "Connecting…", dot: "bg-label-3" },
+  live: { label: "Updated", dot: "bg-up" },
+  stale: { label: "Reconnecting · last update", dot: "bg-warn" },
+  offline: { label: "Offline", dot: "bg-down" },
+}
+
+export function Header({ theme, feed, onToggleTheme }: HeaderProps) {
   const [now, setNow] = useState<Date | null>(null)
   const barRef = useRef<HTMLDivElement>(null)
   const { filter, style } = useRefraction(barRef)
@@ -25,6 +37,11 @@ export function Header({ theme, live, onToggleTheme }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4">
+      {/* Scroll edge effect: content softens as it slides under the toolbar */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[92px] bg-gradient-to-b from-background/85 via-background/40 to-transparent backdrop-blur-[3px] [mask-image:linear-gradient(to_bottom,black_45%,transparent)]"
+      />
       {filter}
       <div
         ref={barRef}
@@ -33,9 +50,16 @@ export function Header({ theme, live, onToggleTheme }: HeaderProps) {
       >
         <div className="flex items-baseline gap-2.5">
           <span className="display text-[17px] font-semibold">MarketBoard</span>
-          <span className="hidden items-center gap-1.5 text-[13px] text-label-2 sm:flex">
-            <span className={cn("h-1.5 w-1.5 rounded-full", live ? "bg-up" : "bg-warn")} />
-            {live ? "Live" : "Simulated"}
+          <span className="flex items-center gap-1.5 text-[13px] text-label-2">
+            <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", FEED_COPY[feed.status].dot)} aria-hidden />
+            <span className="sr-only sm:not-sr-only" role="status" aria-live="polite">
+              {FEED_COPY[feed.status].label}
+            </span>
+            {feed.lastUpdate && (feed.status === "live" || feed.status === "stale") && (
+              <span className="num hidden sm:inline">
+                {new Date(feed.lastUpdate).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
+              </span>
+            )}
           </span>
         </div>
 

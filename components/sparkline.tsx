@@ -3,7 +3,7 @@
 import { useId } from "react"
 
 interface SparklineProps {
-  data: number[]
+  data?: number[] | null
   direction: "up" | "down" | "flat"
   width?: number
   height?: number
@@ -34,7 +34,8 @@ export function Sparkline({ data, direction, width = 80, height = 24, strokeWidt
   const gradientId = useId()
 
   if (!data || data.length < 2) {
-    return <div className="animate-pulse rounded-full bg-foreground/10" style={{ width, height }} />
+    // No real intraday data: leave the space empty rather than drawing a guess
+    return <div style={{ width, height }} aria-hidden />
   }
 
   const min = Math.min(...data)
@@ -54,7 +55,7 @@ export function Sparkline({ data, direction, width = 80, height = 24, strokeWidt
   const color = direction === "up" ? "var(--up)" : direction === "down" ? "var(--down)" : "var(--muted-foreground)"
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="select-none overflow-visible">
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="select-none overflow-visible" aria-hidden>
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.18" />

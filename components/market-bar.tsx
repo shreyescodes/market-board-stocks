@@ -9,15 +9,12 @@ import { Sheet, SheetSearch } from "./sheet"
 import { MAX_INDICES, defaultIndexesFor, indexMeta, indexesFor, type IndexMeta } from "@/lib/indices"
 import { DEFAULT_MARKET, MARKETS, getMarketStatus, marketById } from "@/lib/markets"
 import { cn } from "@/lib/utils"
+import { fetchQuotes, fetchSparks } from "@/lib/stock-data"
+import { formatPercent, formatPrice, formatSigned } from "@/lib/format"
+import { usePoll } from "@/hooks/use-poll"
+import type { Stock } from "@/lib/stock-types"
 
-type IndexData = {
-  symbol: string
-  price: number
-  change: number
-  changePercent: number
-  direction: "up" | "down" | "flat"
-  sparkline: number[]
-}
+type IndexData = Stock
 
 const INDICES_KEY = "marketboard.indicesByMarket"
 const MARKET_KEY = "marketboard.market"
@@ -44,6 +41,7 @@ export function MarketBar() {
   // Each market keeps its own index selection
   const [selectionByMarket, setSelectionByMarket] = useState<Record<string, string[]>>({})
   const [quotes, setQuotes] = useState<Record<string, IndexData>>({})
+  const [sparks, setSparks] = useState<Record<string, number[]>>({})
   const [failed, setFailed] = useState(false)
   const [indexPickerOpen, setIndexPickerOpen] = useState(false)
   const [marketPickerOpen, setMarketPickerOpen] = useState(false)
@@ -78,33 +76,36 @@ export function MarketBar() {
   const market = marketById(marketId) ?? MARKETS[0]
   const selected = selectionByMarket[market.id] ?? defaultIndexesFor(market.id)
   const selectedKey = selected.join(",")
-  useEffect(() => {
-    if (!selectedKey) return
-    let cancelled = false
-    async function load() {
-      try {
-        const res = await fetch(`/api/stocks?action=quotes&symbols=${encodeURIComponent(selectedKey)}`)
-        if (!res.ok) throw new Error("API error")
-        const data = await res.json()
-        if (cancelled) return
-        if (!data.stocks?.length) throw new Error("No data")
-        setQuotes((prev) => {
-          const next = { ...prev }
-          for (const s of data.stocks) next[s.symbol] = s
-          return next
-        })
-        setFailed(false)
-      } catch {
-        if (!cancelled) setFailed(true)
+  usePoll(
+    async () => {
+      if (!selected.length) return true
+      const result = await fetchQuotes(selected)
+      if (!result) {
+        setFailed(true)
+        return false
       }
-    }
-    load()
-    const interval = setInterval(load, 12000)
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [selectedKey])
+      setQuotes((prev) => {
+        const next = { ...prev }
+        for (const s of result.stocks) next[s.symbol] = s
+        return next
+      })
+      setFailed(false)
+      return !result.stale
+    },
+    12_000,
+    selectedKey,
+  )
+
+  usePoll(
+    async () => {
+      if (!selected.length) return true
+      const result = await fetchSparks(selected)
+      if (result) setSparks((prev) => ({ ...prev, ...result }))
+      return !!result
+    },
+    120_000,
+    selectedKey,
+  )
 
   const status = now ? getMarketStatus(market, now) : null
 
@@ -178,7 +179,7 @@ export function MarketBar() {
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={spring}
               >
-                <IndexCell meta={indexMeta(market.id, symbol)!} data={quotes[symbol]} failed={failed} onRemove={() => removeIndex(symbol)} />
+                <IndexCell meta={indexMeta(market.id, symbol)!} data={quotes[symbol]} spark={sparks[symbol]} failed={failed} onRemove={() => removeIndex(symbol)} />
               </motion.div>
             ))}
 
@@ -212,11 +213,13 @@ export function MarketBar() {
 function IndexCell({
   meta,
   data,
+  spark,
   failed,
   onRemove,
 }: {
   meta: IndexMeta
   data?: IndexData
+  spark?: number[]
   failed: boolean
   onRemove: () => void
 }) {
@@ -230,7 +233,7 @@ function IndexCell({
           <>
             <NumericText
               value={data.price}
-              format={(n) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              format={formatPrice}
               className="mt-1 text-[17px] font-semibold"
             />
             <span
@@ -241,13 +244,11 @@ function IndexCell({
                 !isUp && !isDown && "text-label-2",
               )}
             >
-              {data.change >= 0 ? "+" : ""}
-              {data.change.toFixed(2)} ({data.changePercent >= 0 ? "+" : ""}
-              {data.changePercent.toFixed(2)}%)
+              {formatSigned(data.change)} ({formatPercent(data.changePercent)})
             </span>
           </>
         ) : failed ? (
-          <span className="mt-1 text-[13px] text-label-3">Unavailable</span>
+          <span className="mt-1 text-[13px] text-label-2">Unavailable</span>
         ) : (
           <>
             <div className="mt-2 h-4 w-24 animate-pulse rounded-full bg-fill" />
@@ -258,7 +259,7 @@ function IndexCell({
 
       {data && (
         <div className="hidden shrink-0 xl:block">
-          <Sparkline data={data.sparkline} direction={data.direction} width={64} height={30} strokeWidth={1.5} />
+          <Sparkline data={spark} direction={data.direction} width={64} height={30} strokeWidth={1.5} />
         </div>
       )}
 
@@ -308,7 +309,7 @@ function IndexPicker({
               disabled={disabled}
               onClick={() => onAdd(item.symbol)}
               className={cn(
-                "flex w-full items-center justify-between gap-3 rounded-[14px] px-3 py-2.5 text-left transition-colors",
+                "flex w-full items-center justify-between gap-3 rounded-[20px] px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-tint/60",
                 !disabled && "hover:bg-selection active:bg-selection",
                 disabled && !isOn && "opacity-40",
               )}
@@ -390,7 +391,7 @@ function MarketPicker({
                   key={market.id}
                   onClick={() => onChoose(market.id)}
                   className={cn(
-                    "flex w-full items-center justify-between gap-3 rounded-[14px] px-3 py-2.5 text-left transition-colors hover:bg-selection active:bg-selection",
+                    "flex w-full items-center justify-between gap-3 rounded-[20px] px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-tint/60 hover:bg-selection active:bg-selection",
                     isCurrent && "bg-selection",
                   )}
                 >
