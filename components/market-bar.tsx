@@ -3,13 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Check, ChevronDown, Plus, X } from "lucide-react"
-import { Sparkline } from "./sparkline"
 import { NumericText } from "./liquid-glass"
 import { Sheet, SheetSearch } from "./sheet"
 import { MAX_INDICES, defaultIndexesFor, indexMeta, indexesFor, type IndexMeta } from "@/lib/indices"
-import { DEFAULT_MARKET, MARKETS, getMarketStatus, marketById } from "@/lib/markets"
+import { DEFAULT_MARKET, MARKETS, getMarketStatus, marketById, type LiveSession } from "@/lib/markets"
 import { cn } from "@/lib/utils"
-import { fetchQuotes, fetchSparks } from "@/lib/stock-data"
+import { fetchQuotes } from "@/lib/stock-data"
 import { formatPercent, formatPrice, formatSigned } from "@/lib/format"
 import { usePoll } from "@/hooks/use-poll"
 import type { Stock } from "@/lib/stock-types"
@@ -41,7 +40,7 @@ export function MarketBar() {
   // Each market keeps its own index selection
   const [selectionByMarket, setSelectionByMarket] = useState<Record<string, string[]>>({})
   const [quotes, setQuotes] = useState<Record<string, IndexData>>({})
-  const [sparks, setSparks] = useState<Record<string, number[]>>({})
+  const [live, setLive] = useState<{ at: number; byMarket: Record<string, LiveSession> } | null>(null)
   const [failed, setFailed] = useState(false)
   const [indexPickerOpen, setIndexPickerOpen] = useState(false)
   const [marketPickerOpen, setMarketPickerOpen] = useState(false)
@@ -96,18 +95,29 @@ export function MarketBar() {
     selectedKey,
   )
 
+  // Live session state for every market (one batched request for the 16 probe indexes)
   usePoll(
     async () => {
-      if (!selected.length) return true
-      const result = await fetchSparks(selected)
-      if (result) setSparks((prev) => ({ ...prev, ...result }))
-      return !!result
+      const result = await fetchQuotes(MARKETS.map((m) => m.probe))
+      if (!result || result.stale) return false
+      const byMarket: Record<string, LiveSession> = {}
+      for (const m of MARKETS) {
+        const q = result.stocks.find((s) => s.symbol === m.probe)
+        if (q) byMarket[m.id] = { marketState: q.marketState ?? null, lastTrade: q.asOf ?? null }
+      }
+      setLive({ at: Date.now(), byMarket })
+      return true
     },
-    120_000,
-    selectedKey,
+    60_000,
+    "probes",
   )
 
-  const status = now ? getMarketStatus(market, now) : null
+  const liveFor = (id: string) => {
+    // Only trust live session data while it is fresh; stale data could wrongly mark a market closed
+    if (!live || !now || now.getTime() - live.at > 3 * 60_000) return null
+    return live.byMarket[id] ?? null
+  }
+  const status = now ? getMarketStatus(market, now, liveFor(market.id)) : null
 
   const updateIndices = (next: string[]) => {
     const all = { ...selectionByMarket, [market.id]: next }
@@ -151,7 +161,7 @@ export function MarketBar() {
             </span>
             <span className="mt-1 flex items-center gap-2 whitespace-nowrap text-[17px] font-semibold">
               <span className="relative flex h-2 w-2">
-                {status && status.state !== "closed" && (
+                {status && status.state !== "closed" && status.state !== "holiday" && (
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" style={{ background: status.color }} />
                 )}
                 <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: status?.color ?? "var(--label-3)" }} />
@@ -179,7 +189,7 @@ export function MarketBar() {
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={spring}
               >
-                <IndexCell meta={indexMeta(market.id, symbol)!} data={quotes[symbol]} spark={sparks[symbol]} failed={failed} onRemove={() => removeIndex(symbol)} />
+                <IndexCell meta={indexMeta(market.id, symbol)!} data={quotes[symbol]} failed={failed} onRemove={() => removeIndex(symbol)} />
               </motion.div>
             ))}
 
@@ -205,7 +215,14 @@ export function MarketBar() {
       </section>
 
       <IndexPicker open={indexPickerOpen} marketId={market.id} marketName={market.name} selected={selected} onAdd={addIndex} onClose={closeIndexPicker} />
-      <MarketPicker open={marketPickerOpen} now={now} current={market.id} onChoose={chooseMarket} onClose={closeMarketPicker} />
+      <MarketPicker
+        open={marketPickerOpen}
+        now={now}
+        liveFor={liveFor}
+        current={market.id}
+        onChoose={chooseMarket}
+        onClose={closeMarketPicker}
+      />
     </>
   )
 }
@@ -213,13 +230,11 @@ export function MarketBar() {
 function IndexCell({
   meta,
   data,
-  spark,
   failed,
   onRemove,
 }: {
   meta: IndexMeta
   data?: IndexData
-  spark?: number[]
   failed: boolean
   onRemove: () => void
 }) {
@@ -257,11 +272,6 @@ function IndexCell({
         )}
       </div>
 
-      {data && (
-        <div className="hidden shrink-0 xl:block">
-          <Sparkline data={spark} direction={data.direction} width={64} height={30} strokeWidth={1.5} />
-        </div>
-      )}
 
       <button
         onClick={onRemove}
@@ -336,12 +346,14 @@ function IndexPicker({
 function MarketPicker({
   open,
   now,
+  liveFor,
   current,
   onChoose,
   onClose,
 }: {
   open: boolean
   now: Date | null
+  liveFor: (id: string) => LiveSession | null
   current: string
   onChoose: (id: string) => void
   onClose: () => void
@@ -353,8 +365,8 @@ function MarketPicker({
 
   const rows = useMemo(() => {
     if (!now) return []
-    return MARKETS.map((m) => ({ market: m, status: getMarketStatus(m, now) }))
-  }, [now])
+    return MARKETS.map((m) => ({ market: m, status: getMarketStatus(m, now, liveFor(m.id)) }))
+  }, [now, liveFor])
 
   const openCount = rows.filter((r) => r.status.state === "open").length
   const q = query.trim().toLowerCase()
@@ -377,7 +389,7 @@ function MarketPicker({
       open={open}
       onClose={onClose}
       title="World Markets"
-      subtitle={`${openCount} of ${MARKETS.length} open now · regular hours, holidays not included`}
+      subtitle={`${openCount} of ${MARKETS.length} open now · holidays and live exchange status included`}
     >
       <SheetSearch value={query} onChange={setQuery} placeholder="Search countries, cities or exchanges" />
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
@@ -405,7 +417,7 @@ function MarketPicker({
                     </span>
                   </div>
                   <div className="flex shrink-0 flex-col items-end">
-                    <span className="flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: status.state === "closed" ? "var(--label-2)" : status.color }}>
+                    <span className="flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: status.state === "closed" || status.state === "holiday" ? "var(--label-2)" : status.color }}>
                       <span className="h-1.5 w-1.5 rounded-full" style={{ background: status.color }} />
                       {status.label}
                     </span>

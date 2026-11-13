@@ -33,16 +33,3 @@ export async function fetchChart(symbol: string, timeframe: string): Promise<Cha
     return null
   }
 }
-
-/** Real intraday sparklines (latest session) keyed by symbol */
-export async function fetchSparks(symbols: string[]): Promise<Record<string, number[]> | null> {
-  if (!symbols.length) return {}
-  try {
-    const res = await fetch(`/api/stocks?action=sparks&symbols=${encodeURIComponent(symbols.join(","))}`)
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.sparks ?? null
-  } catch {
-    return null
-  }
-}

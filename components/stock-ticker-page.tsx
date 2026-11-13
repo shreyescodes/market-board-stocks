@@ -7,12 +7,11 @@ import { MarketBar } from "./market-bar"
 import { WatchlistTable, type WatchlistRow } from "./watchlist-table"
 import { StockDetails } from "./stock-details"
 import type { Stock } from "@/lib/stock-types"
-import { DEFAULT_SYMBOLS, fetchQuotes, fetchSparks } from "@/lib/stock-data"
+import { DEFAULT_SYMBOLS, fetchQuotes } from "@/lib/stock-data"
 import { usePoll } from "@/hooks/use-poll"
 
 const WATCHLIST_KEY = "marketboard.watchlist"
 const QUOTE_INTERVAL = 10_000
-const SPARK_INTERVAL = 120_000
 
 function loadWatchlist(): string[] {
   try {
@@ -33,7 +32,6 @@ export function StockTickerPage() {
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [symbols, setSymbols] = useState<string[] | null>(null)
   const [quotes, setQuotes] = useState<Record<string, Stock>>({})
-  const [sparks, setSparks] = useState<Record<string, number[]>>({})
   const [selected, setSelected] = useState<string | null>(null)
   const [feed, setFeed] = useState<FeedState>({ status: "connecting", lastUpdate: null })
   const detailRef = useRef<HTMLElement>(null)
@@ -76,18 +74,6 @@ export function StockTickerPage() {
     symbols !== null,
   )
 
-  // Real intraday sparklines change slowly; refresh every 2 min
-  usePoll(
-    async () => {
-      if (!symbols?.length) return true
-      const result = await fetchSparks(symbols)
-      if (result) setSparks((prev) => ({ ...prev, ...result }))
-      return !!result
-    },
-    SPARK_INTERVAL,
-    symbolsKey,
-    symbols !== null,
-  )
 
   // Tell the user once when the feed degrades, and once when it recovers
   useEffect(() => {
@@ -170,7 +156,7 @@ export function StockTickerPage() {
 
   const toggleTheme = useCallback(() => setTheme((prev) => (prev === "dark" ? "light" : "dark")), [])
 
-  const rows: WatchlistRow[] = (symbols ?? []).map((s) => ({ symbol: s, stock: quotes[s], spark: sparks[s] }))
+  const rows: WatchlistRow[] = (symbols ?? []).map((s) => ({ symbol: s, stock: quotes[s] }))
   const selectedStock = selected ? quotes[selected] : undefined
 
   return (

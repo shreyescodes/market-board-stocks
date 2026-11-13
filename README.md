@@ -16,13 +16,15 @@ Screenshots: add these files, then uncomment the image lines below.
 
 ## Features
 
-- **Watchlist sidebar.** Twelve default symbols with price, daily change and an intraday trend line. Search the list, add any ticker through Yahoo Finance autocomplete, or remove one with the red minus button (or the Delete key), with **Undo** in the notification. Your watchlist is saved in the browser.
+- **Watchlist sidebar.** Twelve default symbols with price and daily change. Search the list, add any ticker through Yahoo Finance autocomplete, or remove one with the × button that appears on hover (or the Delete key), with **Undo** in the notification. Your watchlist is saved in the browser.
 - **Detail view.** A large price header, a 1D / 1W / 1M / 3M / 1Y / ALL range control, and a price chart with a time axis and volume bars. Moving the pointer across the chart shows the price, change and time at that point in the header, the way Apple's Stocks app does.
   - **1D:** shows the latest regular trading session, with a dotted line at the official previous close.
   - **Times:** all chart times are in the exchange's own time zone.
 - **Freshness.** Under the price you'll see when the quote is from and the market session, for example "As of 3:12 PM EST · Market open". If the quote falls behind during trading you'll see how far ("6 min behind"). Pre-market and after-hours prices appear when Yahoo has them.
 - **Fundamentals.** Open, high, low, previous close, volume, average volume, market cap, P/E, EPS, dividend yield and the 52-week range, all taken from the live quote.
-- **World market hours.** The first tile shows whether a market is open, in pre-market, after hours, on a lunch break or closed, with a countdown and a progress bar for the session. Tap it to see 16 markets worldwide with their local time and status, and pick one.
+- **World market hours.** The first tile shows whether a market is open, in pre-market, after hours, on a lunch break, closed or on holiday. It includes a countdown and a progress bar for the session. Tap it to see 16 markets worldwide with their local time and status, and pick one.
+  - **Holidays and early closes** are built in: "Holiday · Thanksgiving Day · Pre-market Fri 4:00 AM", "Early close in 1h 30m".
+  - **Countdowns skip holidays,** so on the Friday before Martin Luther King Jr. Day the US shows "Pre-market Tue 4:00 AM".
 - **Indexes that follow the market.** The strip next to the tile shows up to three indexes for the market you picked: Dow Jones, S&P 500 and Nasdaq for the United States; Nifty 50 (NSE) and Sensex (BSE) for India; FTSE 100 for the UK; Nikkei 225 for Japan; and so on, 44 indexes in all. Tap **Add Index** to choose from that market's list, which shows the exchange each index belongs to, and **×** to remove one. Each market remembers its own choice in the browser.
 - **Light and dark appearance.** Follows your system setting on load. The sun/moon button switches it.
 - **Responsive layout.** On a phone the sidebar stacks above the chart and the index strip scrolls sideways.
@@ -59,14 +61,12 @@ All market data comes from Yahoo Finance through [`yahoo-finance2`](https://gith
 | Chart history for every range | Live Yahoo chart data, regular-session bars only |
 | Pre-market and after-hours prices | Live Yahoo quote |
 | Ticker search | Live Yahoo search |
-| Trend lines in the watchlist and index strip | Live Yahoo intraday data for the latest session |
-| Market open/closed status | **Computed** from each exchange's regular hours and time zone. Exchange holidays are not included |
+| Market open/closed status | **Computed** from each exchange's hours and holiday rules, then **checked live** against Yahoo's session state for the market's main index |
 
 **The app never invents data.** If Yahoo can't be reached, the last real prices stay on screen unchanged and the toolbar says **Reconnecting** with the time of the last good update. If there is no data at all, prices show "—" and the toolbar says **Offline**. A chart with no data shows an empty state with a **Try Again** button.
 
 **Refresh rates:**
 - Quotes every 10 seconds and index levels every 12 seconds, each as a single batched request.
-- Trend lines every 2 minutes.
 - The open 1D chart every minute.
 
 The server caches results briefly, so several open tabs don't multiply the load on Yahoo. Refreshing slows down while the feed is failing and pauses while the tab is hidden.
@@ -100,7 +100,6 @@ The front end talks only to `GET /api/stocks`:
 | --- | --- |
 | `?action=quotes&symbols=AAPL,^GSPC` | Quotes, fundamentals, session state and extended-hours prices. `stale: true` means Yahoo is unreachable and these are the last good values |
 | `?action=chart&symbol=AAPL&timeframe=1M` | Price and volume history for `1D`, `1W`, `1M`, `3M`, `1Y` or `ALL`, with the exchange's time zone |
-| `?action=sparks&symbols=AAPL,MSFT` | Intraday trend-line points for the latest session |
 | `?action=search&query=netflix` | Up to five matching stocks or ETFs |
 
 ## Project structure
@@ -118,13 +117,13 @@ components/
   market-bar.tsx          Market-status tile, index strip and both pickers
   liquid-glass.tsx        Glass surface, edge refraction, rolling numbers, change pill
   sheet.tsx               Glass sheet used by the pickers
-  sparkline.tsx           Mini trend line
 hooks/
   use-poll.ts             Polling with back-off that pauses in hidden tabs
 lib/
   indices.ts              Indexes for each market, with their exchange
   markets.ts              Exchange hours and the open/closed status logic
-  stock-data.ts           Client fetch helpers (quotes, charts, trend lines)
+  holidays.ts             Holiday and early-close calendars computed from exchange rules
+  stock-data.ts           Client fetch helpers (quotes, charts)
   format.ts               Price, money and time formatting per currency and time zone
   stock-types.ts
 ```
@@ -140,6 +139,10 @@ lib/
 
 ## Limitations
 
-- Market status uses regular trading hours only. On exchange holidays a market can show as open when it is actually closed.
+- **Two kinds of holiday coverage:**
+  - **Rule-based calendars** cover 10 markets: the US, Canada, Brazil, the UK, Germany, France, Switzerland, South Africa, Australia and Japan.
+  - **Live status only** for China, Hong Kong, India, South Korea, Singapore and Saudi Arabia. Their holidays come from lunar or religious calendars announced each year, so on the day these markets show **Closed Today** once Yahoo confirms there has been no trading, but countdowns before the holiday don't account for it.
+- **Unpredictable closures:** rules can't foresee one-off closures such as state funerals or emergencies. The live check catches those on the day.
+- **Clock changes:** countdowns that span a daylight-saving change can be off by an hour.
 - Edge refraction works only in Chromium browsers.
 - Your watchlist, market and index choices are saved only in this browser.

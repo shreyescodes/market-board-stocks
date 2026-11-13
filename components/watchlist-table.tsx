@@ -1,15 +1,14 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Plus, Search, X, Minus } from "lucide-react"
+import { Plus, Search, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Sparkline } from "./sparkline"
 import { ChangePill, Glass, NumericText } from "./liquid-glass"
 import type { Stock } from "@/lib/stock-types"
 import { formatPercent, formatPrice } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-export type WatchlistRow = { symbol: string; stock?: Stock; spark?: number[] }
+export type WatchlistRow = { symbol: string; stock?: Stock }
 
 interface WatchlistTableProps {
   rows: WatchlistRow[]
@@ -202,7 +201,7 @@ export function WatchlistTable({
       >
         <AnimatePresence initial={false}>
           {filteredRows.length > 0 ? (
-            filteredRows.map(({ symbol, stock, spark }) => {
+            filteredRows.map(({ symbol, stock }) => {
               const isSelected = selectedSymbol === symbol
               return (
                 <motion.div
@@ -245,10 +244,6 @@ export function WatchlistTable({
                     <span className="truncate text-[12px] text-label-2">{stock?.name ?? "\u00a0"}</span>
                   </div>
 
-                  <div className="pointer-events-none relative hidden shrink-0 sm:block lg:hidden xl:block">
-                    <Sparkline data={spark} direction={stock?.direction ?? "flat"} width={58} height={26} strokeWidth={1.5} />
-                  </div>
-
                   <div className="relative flex shrink-0 flex-col items-end gap-1 leading-none">
                     {stock ? (
                       <NumericText value={stock.price} format={formatPrice} className="text-[15px] font-semibold text-foreground" />
@@ -266,10 +261,10 @@ export function WatchlistTable({
                       e.stopPropagation()
                       onRemoveStock(symbol)
                     }}
-                    className="press relative -mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-down-fill text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                    className="press relative -mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 opacity-0 transition-opacity hover:bg-fill-hover hover:text-foreground group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
                     aria-label={`Remove ${symbol}`}
                   >
-                    <Minus className="h-3.5 w-3.5" strokeWidth={3} />
+                    <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                   </button>
                 </motion.div>
               )

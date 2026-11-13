@@ -168,12 +168,6 @@ async function getChart(symbol: string, timeframe: string): Promise<ChartData | 
   }
 }
 
-function downsample(values: number[], target = 48) {
-  if (values.length <= target) return values
-  const step = (values.length - 1) / (target - 1)
-  return Array.from({ length: target }, (_, i) => values[Math.round(i * step)])
-}
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -199,18 +193,6 @@ export async function GET(request: Request) {
       const data = await getChart(symbol.toUpperCase(), timeframe)
       if (!data) return NextResponse.json({ error: "Chart data unavailable" }, { status: 503 })
       return NextResponse.json(data)
-    }
-
-    // Real intraday sparklines: the latest session, downsampled
-    if (action === "sparks") {
-      if (!symbols.length) return NextResponse.json({ error: "Missing symbols parameter" }, { status: 400 })
-      const entries = await Promise.all(
-        symbols.map(async (s) => {
-          const d = await getChart(s, "1D")
-          return [s, d && d.points.length > 1 ? downsample(d.points.map((p) => p.price)) : null] as const
-        }),
-      )
-      return NextResponse.json({ sparks: Object.fromEntries(entries.filter(([, v]) => v)) })
     }
 
     if (action === "search") {
