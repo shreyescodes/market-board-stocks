@@ -4,6 +4,8 @@
 
 A markets dashboard, portfolio tracker and watchlist app with an Apple-style Liquid Glass interface, built with Next.js. Pick any of 16 markets worldwide and the Markets page shows that country's indexes, currency, commodities, sectors and movers. Quotes, charts, index levels, rates, currencies, commodities, movers and ticker search come from Yahoo Finance through a small server route, so no API key is needed.
 
+**Live:** [market-board-ecru.vercel.app](https://market-board-ecru.vercel.app)
+
 ![Markets page in dark mode: sidebar navigation, US market status, index strip, Treasury yields and currencies](docs/screenshots/dark.png)
 
 ![Watchlists page in light mode: a watchlist beside the AAPL intraday chart and fundamentals](docs/screenshots/light.png)
@@ -176,6 +178,8 @@ A few ESLint rules are warnings rather than errors: the React Compiler rules (`s
 **Deployment.** The app needs a server for `/api/stocks`, so it can't be hosted as static files. It deploys to [Vercel](https://vercel.com) through Vercel's GitHub app, with no workflow file or secrets in this repo:
 1. In Vercel, choose **Add New → Project** and import this repository. Next.js is detected automatically, and no environment variables are needed.
 2. Deploy. From then on, every push to `main` deploys to production, and every pull request gets its own preview URL, posted on the PR.
+
+The production site is at [market-board-ecru.vercel.app](https://market-board-ecru.vercel.app).
 3. Optional: in GitHub, under **Settings → Branches**, protect `main` and require the **Lint, type-check and build** check, so nothing merges with a red CI.
 
 On serverless hosts, each function instance keeps its own short-lived quote cache. Yahoo may also rate-limit cloud IP addresses sooner than a home connection. When that happens, the app shows **Reconnecting** with the last good prices rather than failing.
