@@ -2,7 +2,7 @@
 
 # MarketBoard
 
-A markets dashboard, portfolio tracker and watchlist app with an Apple-style Liquid Glass interface, built with Next.js. Quotes, charts, index levels, rates, currencies, commodities, movers and ticker search come from Yahoo Finance through a small server route, so no API key is needed.
+A markets dashboard, portfolio tracker and watchlist app with an Apple-style Liquid Glass interface, built with Next.js. Pick any of 16 markets worldwide and the Markets page shows that country's indexes, currency, commodities, sectors and movers. Quotes, charts, index levels, rates, currencies, commodities, movers and ticker search come from Yahoo Finance through a small server route, so no API key is needed.
 
 ![Markets page in dark mode: sidebar navigation, US market status, index strip, Treasury yields and currencies](docs/screenshots/dark.png)
 
@@ -13,18 +13,52 @@ A markets dashboard, portfolio tracker and watchlist app with an Apple-style Liq
 A full-height glass sidebar switches between three sections and lists your watchlists, the way Music lists playlists. Hide it to an icon rail with the sidebar button or **⌃⌘S**; your choice is remembered. On medium-width screens it shows as the icon rail, and on phones it becomes a floating tab bar. Every symbol anywhere in the app opens its own page.
 
 ### Markets
+Pick a market from the first tile and **the whole page follows it**. Switch to India and every card shows Indian data, priced in rupees. The choice is remembered and stays in sync across open tabs.
+
 - **Market status and indexes.** The first tile shows whether a market is open, in pre-market, after hours, on a lunch break, closed or on holiday, with a countdown and a progress bar for the session. Tap it to see 16 markets worldwide with their local time and status, and pick one.
   - **Holidays and early closes** are built in: "Holiday · Thanksgiving Day · Pre-market Fri 4:00 AM", "Early close in 1h 30m".
   - **Countdowns skip holidays,** so on the Friday before Martin Luther King Jr. Day the US shows "Pre-market Tue 4:00 AM".
   - **Indexes follow the market:** Dow Jones, S&P 500 and Nasdaq for the United States; Nifty 50 (NSE) and Sensex (BSE) for India; FTSE 100 for the UK; Nikkei 225 for Japan; and so on, 46 indexes in all. Tap **Add Index** to choose from that market's list and **×** to remove one, up to three. Each market remembers its own choice.
-- **The whole page follows the market you pick.** Switch to India and every card below the strip shows Indian data, in rupees. The choice is remembered and stays in sync across tabs.
-- **Cross-asset view.**
-  - **Rates or benchmarks:** US Treasury yields (13-week, 5, 10 and 30-year) with changes in basis points for the United States. Other markets show all of their main indexes, because Yahoo carries no other government bond yields.
-  - **Currencies:** the local currency against its main partners, quoted the way local desks write them (USD/INR, EUR/USD, GBP/EUR, AUD/USD, …), plus the dollar index in the US.
-  - **Commodities:** six front-month futures picked for each economy (soybeans, coffee and sugar for Brazil; platinum and palladium for South Africa; lumber for Canada; Dutch TTF gas for Europe), **priced in the local currency** with the US-dollar price underneath. The day's change includes the currency's own move.
-  - **Crypto and volatility:** Bitcoin and Ethereum in the local currency, plus the local volatility index where one exists (VIX, India VIX, ASX VIX).
-- **Sectors.** A heatmap tinted by the size of today's move, from each market's official sector indexes or sector funds: Select Sector SPDRs (US), Nifty sectoral indexes (India), S&P/ASX 200 sectors (Australia), TOPIX-17 ETFs (Japan), CSI sectors (China), Hang Seng sub-indexes (Hong Kong), B3 sector indexes (Brazil) and iShares TSX sector ETFs (Canada). Where Yahoo has none (UK, Germany, France, Switzerland, Saudi Arabia, South Africa, South Korea, Singapore), sector moves are cap-weighted from the market's largest listings.
-- **Movers.** Top gainers, top losers and most active. The US uses Yahoo's screeners. Other markets rank their 28–40 largest listings, with most active measured by value traded, and show how many are up and down.
+- **Rates or benchmarks.** US Treasury yields (13-week, 5, 10 and 30-year) with changes in basis points for the United States. Every other market shows all of its main indexes here instead, because Yahoo carries no other government bond yields.
+- **Currencies.** The local currency against its main trading partners, written the way local desks quote them: USD/INR in India, EUR/USD in Germany, GBP/EUR in the UK, AUD/USD in Australia. The US also shows the dollar index.
+- **Commodities.** Six front-month futures picked for each economy: soybeans, coffee and sugar for Brazil; platinum and palladium for South Africa; lumber for Canada; Dutch TTF gas for Europe.
+  - **Priced in the local currency,** with the original US-dollar (or euro) price underneath, e.g. gold at ₹366,245 with $3,886.30 / troy oz below it.
+  - **The day's change includes the currency's move,** so gold up 0.03% in dollars with the rupee down 0.21% shows +0.24% in India.
+- **Crypto and volatility.** Bitcoin and Ethereum in the local currency, plus the local volatility index where one exists (VIX, India VIX, ASX VIX).
+- **Sectors.** A heatmap tinted by the size of today's move.
+  - **Official sector indexes or funds** for 8 markets: Select Sector SPDRs (US), Nifty sectoral indexes (India), S&P/ASX 200 sectors (Australia), TOPIX-17 ETFs (Japan), CSI sectors (China), Hang Seng sub-indexes (Hong Kong), B3 sector indexes (Brazil) and iShares TSX sector ETFs (Canada). Tap a tile to open it.
+  - **Computed for the other 8** (UK, Germany, France, Switzerland, Saudi Arabia, South Africa, South Korea, Singapore), where Yahoo has none: each sector's move is weighted by market cap across that market's largest listings, and the tile says how many stocks it covers.
+- **Movers.** Top gainers, top losers and most active.
+  - **United States:** Yahoo's screeners, refreshed every minute.
+  - **Other markets:** Yahoo's screeners only cover US listings, so the app ranks each market's 28–40 largest listings instead. Most active is measured by value traded, because share counts aren't comparable across price levels, and the header shows how many are up and how many are down.
+
+<details>
+<summary><strong>What each market shows</strong></summary>
+
+| Market | Currency | First card | Commodities | Volatility | Sectors | Movers |
+| --- | --- | --- | --- | --- | --- | --- |
+| United States | USD | Treasury yields | WTI, Brent, natural gas, gold, silver, copper | VIX | Select Sector SPDRs (11) | Yahoo screeners |
+| Canada | CAD | 1 index | WTI, natural gas, gold, silver, copper, lumber | — | iShares TSX sector ETFs (8) | 34 large caps |
+| Brazil | BRL | 4 indexes | Brent, soybeans, coffee, sugar, corn, gold | — | B3 sector indexes (7) | 28 large caps |
+| United Kingdom | GBP | 2 indexes | Brent, Dutch TTF gas, gold, silver, copper, WTI | — | Computed | 35 large caps |
+| Germany | EUR | 4 indexes | Brent, Dutch TTF gas, gold, copper, aluminum, silver | — | Computed | 35 large caps |
+| France | EUR | 3 indexes | Brent, Dutch TTF gas, gold, wheat, copper, silver | — | Computed | 34 large caps |
+| Switzerland | CHF | 2 indexes | Gold, silver, platinum, Brent, Dutch TTF gas, copper | — | Computed | 31 large caps |
+| Saudi Arabia | SAR | 1 index | Brent, WTI, natural gas, gold, aluminum, copper | — | Computed | 31 large caps |
+| South Africa | ZAR | 2 indexes | Gold, platinum, palladium, Brent, copper, silver | — | Computed | 35 large caps |
+| India | INR | 7 indexes | Gold, silver, Brent, WTI, natural gas, copper | India VIX | Nifty sectoral indexes (12) | 40 large caps |
+| China | CNY | 3 indexes | Copper, gold, soybeans, Brent, aluminum, silver | — | CSI sector indexes (10) | 34 large caps |
+| Hong Kong | HKD | 2 indexes | Gold, Brent, copper, silver, WTI, natural gas | — | Hang Seng sub-indexes (4) | 36 large caps |
+| Japan | JPY | 1 index | Brent, WTI, natural gas, gold, copper, platinum | — | TOPIX-17 sector ETFs (17) | 40 large caps |
+| South Korea | KRW | 3 indexes | Brent, WTI, copper, gold, natural gas, aluminum | — | Computed | 37 large caps |
+| Singapore | SGD | 1 index | Brent, WTI, gold, natural gas, copper, silver | — | Computed | 29 large caps |
+| Australia | AUD | 3 indexes | Gold, copper, Brent, natural gas, wheat, silver | ASX VIX | S&P/ASX 200 sectors (11) | 39 large caps |
+
+</details>
+
+![Markets page in light mode with India selected: commodities and crypto priced in rupees with US-dollar prices beneath, India VIX, and the Nifty sector heatmap](docs/screenshots/india.png)
+
+<sub>India selected: gold, oil and Bitcoin in rupees with the dollar price underneath, and the NSE's own sector indexes.</sub>
 
 | Choose indexes | World market hours |
 | --- | --- |
@@ -152,11 +186,26 @@ The front end talks only to `GET /api/stocks`:
 
 | Query | Returns |
 | --- | --- |
-| `?action=quotes&symbols=AAPL,^GSPC` | Quotes, fundamentals, session state and extended-hours prices. `stale: true` means Yahoo is unreachable and these are the last good values |
+| `?action=quotes&symbols=AAPL,^GSPC` | Quotes, fundamentals, session state and extended-hours prices, up to 50 symbols per request. `stale: true` means Yahoo is unreachable and these are the last good values. Yahoo answers some dollar pairs under a different alias (`JPY=X` for `USDJPY=X`); the route always returns them under the symbol you asked for |
 | `?action=chart&symbol=AAPL&timeframe=1M` | Price and volume history for `1D`, `1W`, `1M`, `3M`, `1Y` or `ALL`, with the exchange's time zone |
 | `?action=movers` | Top 10 US gainers, losers and most active. Cached for a minute |
 | `?action=profiles&symbols=AAPL,SPY` | Sector, industry, country and instrument type. Cached for a day |
 | `?action=search&query=netflix` | Up to five matching stocks or ETFs |
+
+## Adding or changing a market
+
+Everything the Markets page shows for a market lives in its entry in `lib/market-profiles.ts`; the page itself has no per-country code.
+
+1. **Exchange hours and status:** add the market to `MARKETS` in `lib/markets.ts` (and its holiday rules to `lib/holidays.ts` if they are predictable).
+2. **Indexes:** add its indexes to `INDEX_CATALOG` in `lib/indices.ts`. The first three are the defaults in the strip.
+3. **Profile:** add an entry to `PROFILES` with:
+   - `currency`: the ISO code everything is priced in
+   - `fx`: counter currencies; pairs and their direction are built for you
+   - `commodities`: six keys from `COMMODITIES`
+   - `volatility` (optional): the local volatility index
+   - `sectors` (optional): sector indexes or ETFs. Leave it out and sectors are computed from `largeCaps`, which then need a sector on each entry (use `tag()`)
+   - `largeCaps`: the movers universe, as tickers plus the Yahoo suffix (`.NS`, `.L`, `.T`, …). Keep it to 50 or fewer
+4. **Check every symbol** returns a live, current quote from `/api/stocks?action=quotes&symbols=…` before committing. Yahoo renames and drops tickers, and a missing one shows as "—" rather than an error.
 
 ## Project structure
 
