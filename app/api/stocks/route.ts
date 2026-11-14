@@ -26,6 +26,53 @@ type Point = { t: number; price: number; volume: number | null }
 type ChartData = { points: Point[]; timeZone: string; previousClose: number | null; currency: string | null }
 const chartCache = new Map<string, { at: number; data: ChartData }>()
 
+/* Market movers (US) from Yahoo's predefined screeners, cached for a minute */
+const MOVER_LISTS = { gainers: "day_gainers", losers: "day_losers", active: "most_actives" } as const
+const MOVERS_TTL = 60_000
+let moversCache: { at: number; data: Record<string, Quote[]> } | null = null
+
+async function getMovers() {
+  if (moversCache && Date.now() - moversCache.at < MOVERS_TTL) return { data: moversCache.data, stale: false }
+  try {
+    const entries = await Promise.all(
+      Object.entries(MOVER_LISTS).map(async ([key, scrIds]) => {
+        const r: any = await yahooFinance.screener({ scrIds, count: 10 }, undefined, NO_VALIDATION)
+        return [key, (r?.quotes ?? []).map(mapQuote).filter(Boolean) as Quote[]] as const
+      }),
+    )
+    const data = Object.fromEntries(entries)
+    moversCache = { at: Date.now(), data }
+    return { data, stale: false }
+  } catch (e) {
+    console.warn("Yahoo screener request failed:", (e as Error).message)
+    return moversCache ? { data: moversCache.data, stale: true } : null
+  }
+}
+
+/* Company profile (sector, industry, country) — changes rarely, cached for a day */
+const PROFILE_TTL = 24 * 60 * 60_000
+type Profile = { sector: string | null; industry: string | null; country: string | null; quoteType: string | null }
+const profileCache = new Map<string, { at: number; profile: Profile }>()
+
+async function getProfile(symbol: string): Promise<Profile | null> {
+  const hit = profileCache.get(symbol)
+  if (hit && Date.now() - hit.at < PROFILE_TTL) return hit.profile
+  try {
+    const r: any = await yahooFinance.quoteSummary(symbol, { modules: ["assetProfile", "quoteType"] }, NO_VALIDATION)
+    const profile: Profile = {
+      sector: r?.assetProfile?.sector ?? null,
+      industry: r?.assetProfile?.industry ?? null,
+      country: r?.assetProfile?.country ?? null,
+      quoteType: r?.quoteType?.quoteType ?? null,
+    }
+    profileCache.set(symbol, { at: Date.now(), profile })
+    return profile
+  } catch (e) {
+    console.warn(`Yahoo profile request failed for ${symbol}:`, (e as Error).message)
+    return hit?.profile ?? null
+  }
+}
+
 const toMs = (d: unknown): number | null => {
   if (d instanceof Date) return d.getTime()
   if (typeof d === "number") return d < 1e12 ? d * 1000 : d
@@ -193,6 +240,18 @@ export async function GET(request: Request) {
       const data = await getChart(symbol.toUpperCase(), timeframe)
       if (!data) return NextResponse.json({ error: "Chart data unavailable" }, { status: 503 })
       return NextResponse.json(data)
+    }
+
+    if (action === "movers") {
+      const result = await getMovers()
+      if (!result) return NextResponse.json({ error: "Movers unavailable" }, { status: 503 })
+      return NextResponse.json({ ...result.data, stale: result.stale })
+    }
+
+    if (action === "profiles") {
+      if (!symbols.length) return NextResponse.json({ error: "Missing symbols parameter" }, { status: 400 })
+      const entries = await Promise.all(symbols.map(async (s) => [s, await getProfile(s)] as const))
+      return NextResponse.json({ profiles: Object.fromEntries(entries.filter(([, p]) => p)) })
     }
 
     if (action === "search") {
