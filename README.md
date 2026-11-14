@@ -23,6 +23,10 @@ A glass sidebar (a floating tab bar on phones) switches between three sections. 
 - **US sectors.** A heatmap of the 11 S&P 500 sectors (Select Sector SPDR ETFs), tinted by the size of today's move.
 - **US movers.** Top gainers, top losers and most active, from Yahoo's screeners, refreshed every minute.
 
+| Choose indexes | World market hours |
+| --- | --- |
+| ![United States Indexes sheet with Dow Jones and S&P 500 selected](docs/screenshots/index-picker.png) | ![World Markets sheet listing exchanges with live open/closed status](docs/screenshots/world-markets.png) |
+
 ### Portfolio
 - **Positions.** Add holdings with shares and average cost; buying more of something you already hold merges into one position at the weighted average cost. Edit or remove a position (with **Undo**).
 - **Valuation in USD.**
@@ -54,10 +58,6 @@ A glass sidebar (a floating tab bar on phones) switches between three sections. 
 - **Responsive layout.** Sidebar navigation on desktop; a floating glass tab bar on phones.
 - **Storage.** Watchlists, positions, and market and index choices are saved in this browser, and kept in sync across open tabs.
 
-| Choose indexes | World market hours |
-| --- | --- |
-| ![United States Indexes sheet with Dow Jones and S&P 500 selected](docs/screenshots/index-picker.png) | ![World Markets sheet listing exchanges with live open/closed status](docs/screenshots/world-markets.png) |
-
 <p align="center">
   <img src="docs/screenshots/mobile.png" alt="Markets page on a phone, with the floating glass tab bar" width="320" />
 </p>
@@ -68,10 +68,11 @@ A glass sidebar (a floating tab bar on phones) switches between three sections. 
 
 The interface follows Apple's Liquid Glass approach: content sits on a plain black or white background, and glass is used only for the floating layer of controls.
 
-- **Glass surfaces.** The toolbar, the watchlist sidebar, sheets and toasts are translucent with background blur, a thin highlight along the top edge and a soft shadow.
-- **Edge refraction.** In Chromium browsers (Chrome, Edge, Brave, Arc) the toolbar also bends the content scrolling beneath it at its rim. This uses an SVG displacement map applied with `backdrop-filter`. Safari and Firefox get the frosted blur without the bending.
+- **Glass surfaces.** The toolbar, the navigation sidebar, the phone tab bar, sheets and toasts are translucent with background blur, a thin highlight along the top edge and a soft shadow. Lists, charts and tables are plain content and never glass.
+- **Edge refraction.** In Chromium browsers (Chrome, Edge, Brave, Arc) the toolbar and the phone tab bar also bend the content scrolling beneath them at their rims. This uses an SVG displacement map applied with `backdrop-filter`. Safari and Firefox get the frosted blur without the bending.
 - **System palette.** Colors are Apple's system values for labels, separators, fills, green, red and blue, with separate light and dark sets.
-- **Motion.** Prices roll digit by digit when they change. The range control and the watchlist selection slide between items on spring animations.
+- **Motion.** Prices roll digit by digit when they change. The navigation, range control and watchlist selection slide between items on spring animations, and sheets grow out of the control that opened them.
+- **Accessibility.** Text and color-coded values meet WCAG AA contrast (4.5:1) in both appearances. Everything works by keyboard: arrow keys move through the chart ranges, Delete removes the focused watchlist row, and open sheets keep focus inside until closed.
 
 ## Where the data comes from
 
@@ -94,9 +95,12 @@ All market data comes from Yahoo Finance through [`yahoo-finance2`](https://gith
 
 **The app never invents data.** If Yahoo can't be reached, the last real prices stay on screen unchanged and the toolbar says **Reconnecting** with the time of the last good update. If there is no data at all, prices show "—" and the toolbar says **Offline**. A chart with no data shows an empty state with a **Try Again** button.
 
-**Refresh rates:**
-- Quotes every 10 seconds and index levels every 12 seconds, each as a single batched request.
-- The open 1D chart every minute.
+**Refresh rates.** Each of these is one batched request:
+- **Every 10 seconds:** watchlist, portfolio and symbol-page quotes, including the exchange rates the portfolio needs.
+- **Every 12 seconds:** index levels in the strip.
+- **Every 15 seconds:** rates, currencies, commodities, crypto and sectors on the Markets page.
+- **Every minute:** US movers, live market status for all 16 markets, and the open 1D chart.
+- **Once a day:** company profiles (sector and country), cached on the server.
 
 The server caches results briefly, so several open tabs don't multiply the load on Yahoo. Refreshing slows down while the feed is failing and pauses while the tab is hidden.
 
@@ -181,6 +185,12 @@ lib/
 - [Recharts](https://recharts.org) for the chart
 - [yahoo-finance2](https://github.com/gadicc/node-yahoo-finance2) for market data
 - [Sonner](https://sonner.emilkowal.ski) for notifications and [Lucide](https://lucide.dev) for icons
+
+## Privacy
+
+- **No accounts.** Your watchlists and positions are stored only in your browser, never on a server.
+- **What leaves the browser:** to fetch prices, the app sends ticker symbols (for example `AAPL`) to its own server route, which asks Yahoo Finance. Share counts, costs and portfolio values are never sent.
+- **Analytics:** the layout includes [Vercel Web Analytics](https://vercel.com/docs/analytics), which collects anonymous page views only when the app is deployed on Vercel with Analytics turned on. It does nothing locally.
 
 ## Limitations
 
