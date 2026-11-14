@@ -6,24 +6,16 @@ import { AppShell } from "@/components/app-shell"
 
 export const metadata: Metadata = {
   title: { default: "MarketBoard", template: "%s · MarketBoard" },
-  description: "Live stock watchlist with real-time Yahoo Finance quotes",
-  generator: "v0.app",
+  description: "Markets dashboard, portfolio tracker and watchlists with live Yahoo Finance data",
+  applicationName: "MarketBoard",
   icons: {
+    // ?v= busts browsers' favicon cache, which otherwise keeps showing the old template icon
     icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
+      { url: "/favicon.ico?v=3", sizes: "32x32" },
+      { url: "/icon.svg?v=3", type: "image/svg+xml" },
+      { url: "/icon-32.png?v=3", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/apple-icon.png",
+    apple: "/apple-icon.png?v=3",
   },
 }
 
