@@ -2,9 +2,9 @@
 
 A markets dashboard, portfolio tracker and watchlist app with an Apple-style Liquid Glass interface, built with Next.js. Quotes, charts, index levels, rates, currencies, commodities, movers and ticker search come from Yahoo Finance through a small server route, so no API key is needed.
 
-![MarketBoard in dark mode: watchlist, US market status, index strip and the AAPL intraday chart](docs/screenshots/dark.png)
+![Markets page in dark mode: sidebar navigation, US market status, index strip, Treasury yields and currencies](docs/screenshots/dark.png)
 
-![MarketBoard in light mode](docs/screenshots/light.png)
+![Watchlists page in light mode: a watchlist beside the AAPL intraday chart and fundamentals](docs/screenshots/light.png)
 
 ## Features
 
@@ -32,6 +32,10 @@ A glass sidebar (a floating tab bar on phones) switches between three sections. 
 - **Allocation.** By holding, by sector and by currency, as ranked bars.
 - **Backup.** **Export** downloads your watchlists and portfolio as a JSON file; **Import** restores one after a confirmation.
 
+![Portfolio page with an example portfolio: summary tiles, holdings table with USD values and P&L, and allocation](docs/screenshots/portfolio.png)
+
+<sub>The portfolio above is an example; prices and exchange rates are live.</sub>
+
 ### Watchlists
 - **Multiple lists.** Create, rename, switch and delete named watchlists.
 - **The list.** Price and daily change for each symbol. Search it, add any ticker through Yahoo Finance autocomplete, or remove one with the × button that appears on hover (or the Delete key), with **Undo**.
@@ -55,10 +59,10 @@ A glass sidebar (a floating tab bar on phones) switches between three sections. 
 | ![United States Indexes sheet with Dow Jones and S&P 500 selected](docs/screenshots/index-picker.png) | ![World Markets sheet listing exchanges with live open/closed status](docs/screenshots/world-markets.png) |
 
 <p align="center">
-  <img src="docs/screenshots/mobile.png" alt="MarketBoard on a phone, showing the AAPL chart" width="320" />
+  <img src="docs/screenshots/mobile.png" alt="Markets page on a phone, with the floating glass tab bar" width="320" />
 </p>
 
-<sub>Screenshots taken from the running app with live Yahoo Finance data on November 13, 2026, during the US session.</sub>
+<sub>Screenshots taken from the running app with live Yahoo Finance data on Saturday, November 14, 2026, so markets show as closed with Friday's closing prices.</sub>
 
 ## Design
 
