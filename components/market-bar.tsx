@@ -6,7 +6,8 @@ import { Check, ChevronDown, Plus, X } from "lucide-react"
 import { NumericText } from "./liquid-glass"
 import { Sheet, SheetSearch } from "./sheet"
 import { MAX_INDICES, defaultIndexesFor, indexMeta, indexesFor, type IndexMeta } from "@/lib/indices"
-import { DEFAULT_MARKET, MARKETS, getMarketStatus, marketById, type LiveSession } from "@/lib/markets"
+import { MARKETS, getMarketStatus, marketById, type LiveSession } from "@/lib/markets"
+import { useMarket } from "./market-context"
 import { cn } from "@/lib/utils"
 import { fetchQuotes } from "@/lib/stock-data"
 import { formatPercent, formatPrice, formatSigned } from "@/lib/format"
@@ -16,7 +17,6 @@ import type { Stock } from "@/lib/stock-types"
 type IndexData = Stock
 
 const INDICES_KEY = "marketboard.indicesByMarket"
-const MARKET_KEY = "marketboard.market"
 const spring = { type: "spring", stiffness: 420, damping: 34, mass: 0.8 } as const
 
 function readStorage<T>(key: string, parse: (raw: string) => T | null, fallback: T): T {
@@ -36,7 +36,7 @@ function writeStorage(key: string, value: string) {
 
 export function MarketBar() {
   const [now, setNow] = useState<Date | null>(null)
-  const [marketId, setMarketId] = useState(DEFAULT_MARKET)
+  const { market, setMarket, ready } = useMarket()
   // Each market keeps its own index selection
   const [selectionByMarket, setSelectionByMarket] = useState<Record<string, string[]>>({})
   const [quotes, setQuotes] = useState<Record<string, IndexData>>({})
@@ -63,7 +63,6 @@ export function MarketBar() {
         {},
       ),
     )
-    setMarketId(readStorage(MARKET_KEY, (raw) => (marketById(raw) ? raw : null), DEFAULT_MARKET))
   }, [])
 
   useEffect(() => {
@@ -72,7 +71,6 @@ export function MarketBar() {
     return () => clearInterval(timer)
   }, [])
 
-  const market = marketById(marketId) ?? MARKETS[0]
   const selected = selectionByMarket[market.id] ?? defaultIndexesFor(market.id)
   const selectedKey = selected.join(",")
   usePoll(
@@ -93,6 +91,7 @@ export function MarketBar() {
     },
     12_000,
     selectedKey,
+    ready,
   )
 
   // Live session state for every market (one batched request for the 16 probe indexes)
@@ -131,8 +130,7 @@ export function MarketBar() {
     setIndexPickerOpen(false)
   }
   const chooseMarket = (id: string) => {
-    setMarketId(id)
-    writeStorage(MARKET_KEY, id)
+    setMarket(id)
     setMarketPickerOpen(false)
   }
   const closeIndexPicker = useCallback(() => setIndexPickerOpen(false), [])

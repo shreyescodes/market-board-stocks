@@ -130,6 +130,9 @@ function mapQuote(q: any): Quote | null {
   }
 }
 
+/* Yahoo answers USD pairs under either alias ("USDJPY=X" or "JPY=X"), and which one varies by batch */
+const aliasKey = (s: string) => s.replace(/^USD([A-Z]{3})=X$/, "$1=X")
+
 /* One batched upstream request for every symbol whose cache entry is stale */
 async function getQuotes(symbols: string[]) {
   const now = Date.now()
@@ -141,9 +144,13 @@ async function getQuotes(symbols: string[]) {
   if (missing.length) {
     try {
       const res: any[] = (await yahooFinance.quote(missing, { return: "array" }, NO_VALIDATION)) as any
+      const requested = new Map(missing.map((s) => [aliasKey(s), s]))
       for (const q of res ?? []) {
         const mapped = mapQuote(q)
-        if (mapped) quoteCache.set(mapped.symbol, { at: now, quote: mapped })
+        if (!mapped) continue
+        // File the quote under the symbol the client asked for
+        const symbol = missing.includes(mapped.symbol) ? mapped.symbol : (requested.get(aliasKey(mapped.symbol)) ?? mapped.symbol)
+        quoteCache.set(symbol, { at: now, quote: { ...mapped, symbol } })
       }
     } catch (e) {
       upstreamFailed = true

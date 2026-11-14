@@ -8,6 +8,7 @@ import { Briefcase, Globe, List, ListPlus, PanelLeftClose, PanelLeftOpen } from 
 import { Toaster } from "sonner"
 import { DesktopToolbar, MobileHeader } from "./header"
 import { FeedProvider, WorkspaceProvider, useFeed, useWorkspace } from "./workspace"
+import { MarketProvider } from "./market-context"
 import { WatchlistsSheet } from "./watchlists-sheet"
 import { Glass, useRefraction } from "./liquid-glass"
 import { cn } from "@/lib/utils"
@@ -53,15 +54,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <FeedProvider>
       <WorkspaceProvider>
-        <div className={theme === "dark" ? "dark" : ""}>
-          <Toaster position="top-center" theme={theme} offset={80} toastOptions={{ className: "liquid-toast" }} />
-          <div className="min-h-screen bg-background pb-28 text-foreground md:pb-6">
-            <ShellChrome theme={theme} onToggleTheme={toggleTheme}>
-              {children}
-            </ShellChrome>
-            <TabBar />
+        <MarketProvider>
+          <div className={theme === "dark" ? "dark" : ""}>
+            <Toaster position="top-center" theme={theme} offset={80} toastOptions={{ className: "liquid-toast" }} />
+            <div className="min-h-screen bg-background pb-28 text-foreground md:pb-6">
+              <ShellChrome theme={theme} onToggleTheme={toggleTheme}>
+                {children}
+              </ShellChrome>
+              <TabBar />
+            </div>
           </div>
-        </div>
+        </MarketProvider>
       </WorkspaceProvider>
     </FeedProvider>
   )

@@ -21,6 +21,8 @@ export const INDEX_CATALOG: IndexMeta[] = [
   // Brazil
   { market: "br", symbol: "^BVSP", name: "Ibovespa", source: "B3" },
   { market: "br", symbol: "^IBX50", name: "IBrX 50", source: "B3" },
+  { market: "br", symbol: "SMLL.SA", name: "Small Cap", source: "B3" },
+  { market: "br", symbol: "MLCX.SA", name: "MidLarge Cap", source: "B3" },
   // United Kingdom
   { market: "uk", symbol: "^FTSE", name: "FTSE 100", source: "LSE" },
   { market: "uk", symbol: "^FTMC", name: "FTSE 250", source: "LSE" },
