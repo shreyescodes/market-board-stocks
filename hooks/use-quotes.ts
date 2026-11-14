@@ -10,11 +10,22 @@ import type { Stock } from "@/lib/stock-types"
  * Live quotes for a set of symbols: one batched request per interval, with back-off on failure.
  * Results are merged, so a failed refresh keeps the last real values instead of clearing them.
  * Reports feed health to the toolbar unless `report` is false.
+ * `related` adds symbols that depend on the latest quotes (e.g. the FX rate for a holding's
+ * currency) to the same batched request.
  */
-export function useQuotes(symbols: string[], intervalMs = 10_000, { report = true, enabled = true } = {}) {
+export function useQuotes(
+  base: string[],
+  intervalMs = 10_000,
+  {
+    report = true,
+    enabled = true,
+    related,
+  }: { report?: boolean; enabled?: boolean; related?: (latest: Record<string, Stock>) => string[] } = {},
+) {
   const [quotes, setQuotes] = useState<Record<string, Stock>>({})
   const [state, setState] = useState<"loading" | "ready" | "error">("loading")
   const { report: reportFeed } = useFeed()
+  const symbols = [...base, ...(related?.(quotes) ?? [])]
   const key = [...new Set(symbols)].sort().join(",")
 
   usePoll(

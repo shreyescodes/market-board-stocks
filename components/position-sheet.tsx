@@ -18,36 +18,50 @@ export function PositionSheet({ open, initial, onClose }: { open: boolean; initi
   const editing = !!initial?.id
   const [symbol, setSymbol] = useState("")
   const [query, setQuery] = useState("")
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [results, setResults] = useState<Suggestion[]>([])
   const [shares, setShares] = useState("")
   const [cost, setCost] = useState("")
-  const [quote, setQuote] = useState<Stock | null>(null)
-  const [lookup, setLookup] = useState<"idle" | "loading" | "missing" | "error">("idle")
+  // The latest quote lookup, tagged with the symbol it was for
+  const [found, setFound] = useState<{ symbol: string; opening: number; status: "idle" | "missing" | "error"; quote: Stock | null }>({
+    symbol: "",
+    opening: 0,
+    status: "idle",
+    quote: null,
+  })
   const [submitted, setSubmitted] = useState(false)
 
-  // Reset the form each time the sheet opens
-  useEffect(() => {
-    if (!open) return
-    setSymbol(initial?.symbol ?? "")
-    setQuery("")
-    setSuggestions([])
-    setShares(initial?.shares != null ? String(initial.shares) : "")
-    setCost(initial?.cost != null ? String(initial.cost) : "")
-    setQuote(null)
-    setLookup("idle")
-    setSubmitted(false)
-  }, [open, initial])
+  // Reset the form each time the sheet opens (adjusting state during render, not in an effect)
+  // `opening` counts openings, so the quote is looked up afresh even when the symbol is unchanged
+  const [shown, setShown] = useState<{ open: boolean; initial: PositionDraft | null; opening: number }>({
+    open: false,
+    initial: null,
+    opening: 0,
+  })
+  if (open !== shown.open || initial !== shown.initial) {
+    setShown({ open, initial, opening: open ? shown.opening + 1 : shown.opening })
+    if (open) {
+      setSymbol(initial?.symbol ?? "")
+      setQuery("")
+      setResults([])
+      setShares(initial?.shares != null ? String(initial.shares) : "")
+      setCost(initial?.cost != null ? String(initial.cost) : "")
+      setSubmitted(false)
+    }
+  }
+
+  // Suggestions only while searching; the lookup is "loading" until a result for this symbol arrives
+  const suggestions = symbol || !query.trim() ? [] : results
+  const current = found.symbol === symbol && found.opening === shown.opening
+  const lookup = !symbol ? "idle" : current ? found.status : "loading"
+  const quote = current ? found.quote : null
 
   // Symbol search (only when no symbol is chosen yet)
   useEffect(() => {
-    if (symbol || !query.trim()) {
-      setSuggestions([])
-      return
-    }
+    if (symbol || !query.trim()) return
     const t = setTimeout(async () => {
       try {
         const res = await fetch(`/api/stocks?action=search&query=${encodeURIComponent(query.trim())}`)
-        if (res.ok) setSuggestions((await res.json()).results ?? [])
+        if (res.ok) setResults((await res.json()).results ?? [])
       } catch {}
     }, 250)
     return () => clearTimeout(t)
@@ -57,20 +71,19 @@ export function PositionSheet({ open, initial, onClose }: { open: boolean; initi
   useEffect(() => {
     if (!symbol) return
     let active = true
-    setLookup("loading")
+    const opening = shown.opening
     fetchQuotes([symbol]).then((r) => {
       if (!active) return
-      if (!r) return setLookup("error")
+      if (!r) return setFound({ symbol, opening, status: "error", quote: null })
       const q = r.stocks.find((s) => s.symbol === symbol)
-      if (!q) return setLookup("missing")
-      setQuote(q)
-      setLookup("idle")
+      if (!q) return setFound({ symbol, opening, status: "missing", quote: null })
+      setFound({ symbol, opening, status: "idle", quote: q })
       setCost((c) => (c === "" ? String(Number(q.price.toFixed(q.price < 1 ? 4 : 2))) : c))
     })
     return () => {
       active = false
     }
-  }, [symbol])
+  }, [symbol, shown.opening])
 
   const sharesNum = Number(shares)
   const costNum = Number(cost)
@@ -139,7 +152,6 @@ export function PositionSheet({ open, initial, onClose }: { open: boolean; initi
                   type="button"
                   onClick={() => {
                     setSymbol("")
-                    setQuote(null)
                     setCost("")
                   }}
                   className="press shrink-0 rounded-full px-3 py-1 text-[13px] font-semibold text-tint"

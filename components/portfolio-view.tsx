@@ -21,7 +21,7 @@ const tone = (n?: number | null) => (n == null || Math.abs(n) < 0.005 ? "text-la
 
 export function PortfolioView() {
   const { ready, workspace, removePosition, restorePosition, replaceWorkspace } = useWorkspace()
-  const positions = workspace?.positions ?? []
+  const positions = useMemo(() => workspace?.positions ?? [], [workspace])
   const [draft, setDraft] = useState<PositionDraft | null>(null)
   const [importing, setImporting] = useState<Workspace | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -29,13 +29,13 @@ export function PortfolioView() {
   // Quotes for holdings, plus FX rates for every non-USD currency they trade in
   const holdingSymbols = useMemo(() => [...new Set(positions.map((p) => p.symbol))], [positions])
   // One batched request: once a holding's currency is known, its FX rate joins the same request
-  const [fxSymbols, setFxSymbols] = useState<string[]>([])
-  const { quotes } = useQuotes([...holdingSymbols, ...fxSymbols], 10_000, { enabled: ready })
-  useEffect(() => {
-    const codes = new Set(holdingSymbols.map((s) => quotes[s]).filter(Boolean).map((q) => majorCurrency(q!.currency).code))
-    const next = [...codes].map(fxSymbol).filter((s): s is string => !!s).sort()
-    setFxSymbols((prev) => (prev.join() === next.join() ? prev : next))
-  }, [quotes, holdingSymbols])
+  const { quotes } = useQuotes(holdingSymbols, 10_000, {
+    enabled: ready,
+    related: (latest) => {
+      const codes = new Set(holdingSymbols.map((s) => latest[s]).filter(Boolean).map((q) => majorCurrency(q!.currency).code))
+      return [...codes].map(fxSymbol).filter((s): s is string => !!s)
+    },
+  })
 
   const summary = useMemo(() => valuePortfolio(positions, quotes), [positions, quotes])
 
@@ -43,13 +43,13 @@ export function PortfolioView() {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({})
   const profileKey = holdingSymbols.join(",")
   useEffect(() => {
-    if (!holdingSymbols.length) return
+    // Keyed on the joined symbols, so unrelated workspace edits don't refetch
+    if (!profileKey) return
     let active = true
-    fetchProfiles(holdingSymbols).then((p) => active && p && setProfiles((prev) => ({ ...prev, ...p })))
+    fetchProfiles(profileKey.split(",")).then((p) => active && p && setProfiles((prev) => ({ ...prev, ...p })))
     return () => {
       active = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileKey])
 
   const valued = summary.rows.filter((r) => r.value != null)

@@ -36,8 +36,8 @@ async function getMovers() {
   try {
     const entries = await Promise.all(
       Object.entries(MOVER_LISTS).map(async ([key, scrIds]) => {
-        const r: any = await yahooFinance.screener({ scrIds, count: 10 }, undefined, NO_VALIDATION)
-        return [key, (r?.quotes ?? []).map(mapQuote).filter(Boolean) as Quote[]] as const
+        const r = obj(await yahooFinance.screener({ scrIds, count: 10 }, undefined, NO_VALIDATION))
+        return [key, list(r.quotes).map(mapQuote).filter((q): q is Quote => !!q)] as const
       }),
     )
     const data = Object.fromEntries(entries)
@@ -58,12 +58,13 @@ async function getProfile(symbol: string): Promise<Profile | null> {
   const hit = profileCache.get(symbol)
   if (hit && Date.now() - hit.at < PROFILE_TTL) return hit.profile
   try {
-    const r: any = await yahooFinance.quoteSummary(symbol, { modules: ["assetProfile", "quoteType"] }, NO_VALIDATION)
+    const r = obj(await yahooFinance.quoteSummary(symbol, { modules: ["assetProfile", "quoteType"] }, NO_VALIDATION))
+    const asset = obj(r.assetProfile)
     const profile: Profile = {
-      sector: r?.assetProfile?.sector ?? null,
-      industry: r?.assetProfile?.industry ?? null,
-      country: r?.assetProfile?.country ?? null,
-      quoteType: r?.quoteType?.quoteType ?? null,
+      sector: str(asset.sector),
+      industry: str(asset.industry),
+      country: str(asset.country),
+      quoteType: str(obj(r.quoteType).quoteType),
     }
     profileCache.set(symbol, { at: Date.now(), profile })
     return profile
@@ -83,16 +84,23 @@ const toMs = (d: unknown): number | null => {
   return null
 }
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null)
+const str = (v: unknown): string | null => (typeof v === "string" && v ? v : null)
 
-function mapQuote(q: any): Quote | null {
+/* Yahoo responses are left unvalidated (NO_VALIDATION), so read them as plain records */
+type Raw = Record<string, unknown>
+const obj = (v: unknown): Raw => (v && typeof v === "object" && !Array.isArray(v) ? (v as Raw) : {})
+const list = (v: unknown): Raw[] => (Array.isArray(v) ? v.map(obj) : [])
+
+function mapQuote(q: Raw): Quote | null {
+  const symbol = str(q.symbol)
   const price = num(q.regularMarketPrice)
-  if (price == null) return null
+  if (!symbol || price == null) return null
   const prevClose = num(q.regularMarketPreviousClose) ?? price
   const change = num(q.regularMarketChange) ?? price - prevClose
   const changePercent = num(q.regularMarketChangePercent) ?? (prevClose ? (change / prevClose) * 100 : 0)
   return {
-    symbol: q.symbol,
-    name: q.longName || q.shortName || q.symbol, // longName reads naturally ("The Boeing Company")
+    symbol,
+    name: str(q.longName) ?? str(q.shortName) ?? symbol, // longName reads naturally ("The Boeing Company")
     price,
     prevClose,
     change,
@@ -109,13 +117,13 @@ function mapQuote(q: any): Quote | null {
     mktCap: num(q.marketCap),
     eps: num(q.epsTrailingTwelveMonths),
     dividendYield:
-      num(q.dividendYield) ?? (num(q.trailingAnnualDividendYield) != null ? q.trailingAnnualDividendYield * 100 : null),
-    exchange: q.fullExchangeName ?? q.exchange ?? null,
-    currency: q.currency ?? null,
+      num(q.dividendYield) ?? ((y) => (y != null ? y * 100 : null))(num(q.trailingAnnualDividendYield)),
+    exchange: str(q.fullExchangeName) ?? str(q.exchange),
+    currency: str(q.currency),
     // Freshness and session information
-    marketState: q.marketState ?? null, // PRE | REGULAR | POST | POSTPOST | PREPRE | CLOSED
+    marketState: str(q.marketState), // PRE | REGULAR | POST | POSTPOST | PREPRE | CLOSED
     asOf: toMs(q.regularMarketTime),
-    timeZone: q.exchangeTimezoneName ?? null,
+    timeZone: str(q.exchangeTimezoneName),
     // Yahoo's exchangeDataDelayedBy is a blanket per-exchange flag (often 15 even for fresh quotes),
     // so the client judges delay from the quote timestamp instead
     exchangeDelayMinutes: num(q.exchangeDataDelayedBy) ?? 0,
@@ -143,9 +151,9 @@ async function getQuotes(symbols: string[]) {
   let upstreamFailed = false
   if (missing.length) {
     try {
-      const res: any[] = (await yahooFinance.quote(missing, { return: "array" }, NO_VALIDATION)) as any
+      const res = list(await yahooFinance.quote(missing, { return: "array" }, NO_VALIDATION))
       const requested = new Map(missing.map((s) => [aliasKey(s), s]))
-      for (const q of res ?? []) {
+      for (const q of res) {
         const mapped = mapQuote(q)
         if (!mapped) continue
         // File the quote under the symbol the client asked for
@@ -193,18 +201,23 @@ async function getChart(symbol: string, timeframe: string): Promise<ChartData | 
   const c = cfg[timeframe] ?? cfg["1M"]
 
   try {
-    const chart: any = await yahooFinance.chart(
-      symbol,
-      // Regular-session bars only, so "1D" is the trading day rather than 4 AM–8 PM
-      { period1: new Date(Date.now() - c.back), interval: c.interval, includePrePost: false },
-      NO_VALIDATION,
+    const chart = obj(
+      await yahooFinance.chart(
+        symbol,
+        // Regular-session bars only, so "1D" is the trading day rather than 4 AM–8 PM
+        { period1: new Date(Date.now() - c.back), interval: c.interval, includePrePost: false },
+        NO_VALIDATION,
+      ),
     )
-    const timeZone: string = chart?.meta?.exchangeTimezoneName ?? "America/New_York"
-    let points: Point[] = (chart?.quotes ?? [])
-      .map((q: any) => ({ t: toMs(q.date), price: num(q.close), volume: num(q.volume) }))
-      .filter((p: any) => p.t != null && p.price != null) as Point[]
+    const meta = obj(chart.meta)
+    const timeZone = str(meta.exchangeTimezoneName) ?? "America/New_York"
+    let points: Point[] = list(chart.quotes).flatMap((q) => {
+      const t = toMs(q.date)
+      const price = num(q.close)
+      return t != null && price != null ? [{ t, price, volume: num(q.volume) }] : []
+    })
 
-    let previousClose: number | null = num(chart?.meta?.chartPreviousClose)
+    let previousClose: number | null = num(meta.chartPreviousClose)
     if (timeframe === "1D" && points.length) {
       // Keep only the most recent trading session; its previous close is the prior session's last price
       const lastDay = dayKey(points[points.length - 1].t, timeZone)
@@ -213,7 +226,7 @@ async function getChart(symbol: string, timeframe: string): Promise<ChartData | 
       points = points.slice(firstIdx)
     }
 
-    const data: ChartData = { points, timeZone, previousClose, currency: chart?.meta?.currency ?? null }
+    const data: ChartData = { points, timeZone, previousClose, currency: str(meta.currency) }
     chartCache.set(key, { at: Date.now(), data })
     return data
   } catch (e) {
@@ -265,10 +278,13 @@ export async function GET(request: Request) {
       const query = searchParams.get("query")
       if (!query) return NextResponse.json({ error: "Missing query parameter" }, { status: 400 })
       try {
-        const results: any = await yahooFinance.search(query, {}, NO_VALIDATION)
-        const mappedResults = (results.quotes || [])
-          .filter((q: any) => q.symbol && (q.quoteType === "EQUITY" || q.quoteType === "ETF"))
-          .map((q: any) => ({ symbol: q.symbol, name: q.shortname || q.longname || q.symbol, exchange: q.exchange || "" }))
+        const results = obj(await yahooFinance.search(query, {}, NO_VALIDATION))
+        const mappedResults = list(results.quotes)
+          .flatMap((q) => {
+            const symbol = str(q.symbol)
+            if (!symbol || (q.quoteType !== "EQUITY" && q.quoteType !== "ETF")) return []
+            return [{ symbol, name: str(q.shortname) ?? str(q.longname) ?? symbol, exchange: str(q.exchange) ?? "" }]
+          })
           .slice(0, 5)
         return NextResponse.json({ results: mappedResults })
       } catch (e) {
@@ -278,8 +294,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
-  } catch (error: any) {
+  } catch (error) {
     console.error("API error:", error)
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: (error instanceof Error && error.message) || "Internal server error" }, { status: 500 })
   }
 }

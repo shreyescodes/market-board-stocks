@@ -9,6 +9,7 @@ import { Toaster } from "sonner"
 import { DesktopToolbar, MobileHeader } from "./header"
 import { FeedProvider, WorkspaceProvider, useFeed, useWorkspace } from "./workspace"
 import { MarketProvider } from "./market-context"
+import { useMediaQuery, useStoredString, writeStored } from "@/hooks/use-browser"
 import { WatchlistsSheet } from "./watchlists-sheet"
 import { Glass, useRefraction } from "./liquid-glass"
 import { cn } from "@/lib/utils"
@@ -39,17 +40,15 @@ const WIDTH_OPEN = 248
 const WIDTH_RAIL = 68
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<"dark" | "light">("dark")
-
-  // Follow the system appearance on first load, like a native Apple app
-  useEffect(() => {
-    setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-  }, [])
+  // Follow the system appearance, like a native Apple app, until the user picks one
+  const systemDark = useMediaQuery("(prefers-color-scheme: dark)", true)
+  const [chosen, setChosen] = useState<"dark" | "light" | null>(null)
+  const theme = chosen ?? (systemDark ? "dark" : "light")
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
     document.documentElement.style.colorScheme = theme
   }, [theme])
-  const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), [])
+  const toggleTheme = useCallback(() => setChosen(theme === "dark" ? "light" : "dark"), [theme])
 
   return (
     <FeedProvider>
@@ -80,29 +79,11 @@ function ShellChrome({
   children: ReactNode
 }) {
   const { feed } = useFeed()
-  const [collapsed, setCollapsed] = useState(false)
-  const [narrow, setNarrow] = useState(false)
-
   // Remember the user's choice; medium-width screens always use the icon rail
-  useEffect(() => {
-    try {
-      setCollapsed(localStorage.getItem(COLLAPSED_KEY) === "1")
-    } catch {}
-    const mq = window.matchMedia("(max-width: 1023px)")
-    const sync = () => setNarrow(mq.matches)
-    sync()
-    mq.addEventListener("change", sync)
-    return () => mq.removeEventListener("change", sync)
-  }, [])
+  const collapsed = useStoredString(COLLAPSED_KEY) === "1"
+  const narrow = useMediaQuery("(max-width: 1023px)")
 
-  const toggle = useCallback(() => {
-    setCollapsed((c) => {
-      try {
-        localStorage.setItem(COLLAPSED_KEY, c ? "0" : "1")
-      } catch {}
-      return !c
-    })
-  }, [])
+  const toggle = useCallback(() => writeStored(COLLAPSED_KEY, collapsed ? "0" : "1"), [collapsed])
 
   // ⌃⌘S toggles the sidebar, as in macOS apps
   useEffect(() => {

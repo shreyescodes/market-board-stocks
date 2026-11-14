@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
 import { WatchlistTable, type WatchlistRow } from "./watchlist-table"
 import { WatchlistsSheet } from "./watchlists-sheet"
@@ -14,18 +14,15 @@ export function WatchlistsView() {
   const { feed } = useFeed()
   const symbols = activeWatchlist?.symbols ?? []
   const { quotes } = useQuotes(symbols, 10_000, { enabled: ready })
-  const [selected, setSelected] = useState<string | null>(null)
+  const [picked, setPicked] = useState<string | null>(null)
   const [managing, setManaging] = useState(false)
   const detailRef = useRef<HTMLElement>(null)
 
   // Keep a valid selection when switching lists or removing the selected symbol
-  useEffect(() => {
-    if (!activeWatchlist) return
-    if (!selected || !activeWatchlist.symbols.includes(selected)) setSelected(activeWatchlist.symbols[0] ?? null)
-  }, [activeWatchlist, selected])
+  const selected = picked && symbols.includes(picked) ? picked : (symbols[0] ?? null)
 
   const selectSymbol = useCallback((symbol: string) => {
-    setSelected(symbol)
+    setPicked(symbol)
     // On narrow screens the chart sits below the list; bring it into view
     if (window.matchMedia("(max-width: 1023px)").matches) {
       requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }))

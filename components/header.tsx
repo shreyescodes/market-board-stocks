@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useRef } from "react"
+import { useNow } from "@/hooks/use-browser"
 import { AnimatePresence, motion } from "framer-motion"
 import { Moon, Sun } from "lucide-react"
 import { useRefraction } from "./liquid-glass"
@@ -54,12 +55,7 @@ function FeedStatus({ feed, compact }: { feed: FeedState; compact?: boolean }) {
 }
 
 function Clock() {
-  const [now, setNow] = useState<Date | null>(null)
-  useEffect(() => {
-    setNow(new Date())
-    const timer = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(timer)
-  }, [])
+  const now = useNow()
   return (
     <span className="num whitespace-nowrap text-[13px] text-label-2">
       {now?.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
