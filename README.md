@@ -16,14 +16,15 @@ A full-height glass sidebar switches between three sections and lists your watch
 - **Market status and indexes.** The first tile shows whether a market is open, in pre-market, after hours, on a lunch break, closed or on holiday, with a countdown and a progress bar for the session. Tap it to see 16 markets worldwide with their local time and status, and pick one.
   - **Holidays and early closes** are built in: "Holiday · Thanksgiving Day · Pre-market Fri 4:00 AM", "Early close in 1h 30m".
   - **Countdowns skip holidays,** so on the Friday before Martin Luther King Jr. Day the US shows "Pre-market Tue 4:00 AM".
-  - **Indexes follow the market:** Dow Jones, S&P 500 and Nasdaq for the United States; Nifty 50 (NSE) and Sensex (BSE) for India; FTSE 100 for the UK; Nikkei 225 for Japan; and so on, 44 indexes in all. Tap **Add Index** to choose from that market's list and **×** to remove one, up to three. Each market remembers its own choice.
+  - **Indexes follow the market:** Dow Jones, S&P 500 and Nasdaq for the United States; Nifty 50 (NSE) and Sensex (BSE) for India; FTSE 100 for the UK; Nikkei 225 for Japan; and so on, 46 indexes in all. Tap **Add Index** to choose from that market's list and **×** to remove one, up to three. Each market remembers its own choice.
+- **The whole page follows the market you pick.** Switch to India and every card below the strip shows Indian data, in rupees. The choice is remembered and stays in sync across tabs.
 - **Cross-asset view.**
-  - **Rates:** US Treasury yields (13-week, 5, 10 and 30-year), with changes in basis points.
-  - **Currencies:** the dollar index and major pairs.
-  - **Commodities:** front-month futures for oil, gas, gold, silver and copper.
-  - **Crypto and volatility:** Bitcoin, Ethereum and the VIX.
-- **US sectors.** A heatmap of the 11 S&P 500 sectors (Select Sector SPDR ETFs), tinted by the size of today's move.
-- **US movers.** Top gainers, top losers and most active, from Yahoo's screeners, refreshed every minute.
+  - **Rates or benchmarks:** US Treasury yields (13-week, 5, 10 and 30-year) with changes in basis points for the United States. Other markets show all of their main indexes, because Yahoo carries no other government bond yields.
+  - **Currencies:** the local currency against its main partners, quoted the way local desks write them (USD/INR, EUR/USD, GBP/EUR, AUD/USD, …), plus the dollar index in the US.
+  - **Commodities:** six front-month futures picked for each economy (soybeans, coffee and sugar for Brazil; platinum and palladium for South Africa; lumber for Canada; Dutch TTF gas for Europe), **priced in the local currency** with the US-dollar price underneath. The day's change includes the currency's own move.
+  - **Crypto and volatility:** Bitcoin and Ethereum in the local currency, plus the local volatility index where one exists (VIX, India VIX, ASX VIX).
+- **Sectors.** A heatmap tinted by the size of today's move, from each market's official sector indexes or sector funds: Select Sector SPDRs (US), Nifty sectoral indexes (India), S&P/ASX 200 sectors (Australia), TOPIX-17 ETFs (Japan), CSI sectors (China), Hang Seng sub-indexes (Hong Kong), B3 sector indexes (Brazil) and iShares TSX sector ETFs (Canada). Where Yahoo has none (UK, Germany, France, Switzerland, Saudi Arabia, South Africa, South Korea, Singapore), sector moves are cap-weighted from the market's largest listings.
+- **Movers.** Top gainers, top losers and most active. The US uses Yahoo's screeners. Other markets rank their 28–40 largest listings, with most active measured by value traded, and show how many are up and down.
 
 | Choose indexes | World market hours |
 | --- | --- |
@@ -89,8 +90,10 @@ All market data comes from Yahoo Finance through [`yahoo-finance2`](https://gith
 | Index levels (`^DJI`, `^NSEI`, `^BSESN`, `^N225`, …) | Live Yahoo quote for the real index |
 | Chart history for every range | Live Yahoo chart data, regular-session bars only |
 | Pre-market and after-hours prices | Live Yahoo quote |
-| Rates, currencies, commodities, crypto, VIX, sector ETFs | Live Yahoo quotes |
+| Rates, currencies, commodities, crypto, volatility, sector indexes and ETFs | Live Yahoo quotes |
+| Commodities and crypto in local currency | **Computed** from the live USD (or EUR) quote and the live exchange rate |
 | US movers (gainers, losers, most active) | Live Yahoo predefined screeners |
+| Movers and computed sectors for other markets | **Computed** from live quotes for each market's largest listings |
 | Sector and country for portfolio allocation | Yahoo company profile, cached for a day |
 | Exchange rates for portfolio valuation | Live Yahoo FX quotes (`INRUSD=X`, `GBPUSD=X`, …) |
 | Ticker search | Live Yahoo search |
@@ -101,7 +104,7 @@ All market data comes from Yahoo Finance through [`yahoo-finance2`](https://gith
 **Refresh rates.** Each of these is one batched request:
 - **Every 10 seconds:** watchlist, portfolio and symbol-page quotes, including the exchange rates the portfolio needs.
 - **Every 12 seconds:** index levels in the strip.
-- **Every 15 seconds:** rates, currencies, commodities, crypto and sectors on the Markets page.
+- **Every 15 seconds:** rates or benchmarks, currencies, commodities, crypto, sectors and (outside the US) the large-cap quotes behind movers on the Markets page.
 - **Every minute:** US movers, live market status for all 16 markets, and the open 1D chart.
 - **Once a day:** company profiles (sector and country), cached on the server.
 
@@ -154,6 +157,7 @@ app/
 components/
   app-shell.tsx           Collapsible glass sidebar, page layout and phone tab bar
   workspace.tsx           Shared state: watchlists, positions and feed health
+  market-context.tsx      The selected market, shared by the strip and the Markets page
   markets-view.tsx        Markets page
   portfolio-view.tsx      Portfolio page
   position-sheet.tsx      Add / edit a position
@@ -173,6 +177,7 @@ lib/
   storage.ts              Browser storage, migration and backup files
   portfolio.ts            Portfolio valuation in USD and allocation
   indices.ts              Indexes for each market, with their exchange
+  market-profiles.ts      Per-market currency, FX pairs, commodities, sectors and large caps
   markets.ts              Exchange hours and the open/closed status logic
   holidays.ts             Holiday and early-close calendars computed from exchange rules
   stock-data.ts           Client fetch helpers (quotes, charts, movers, profiles)
@@ -205,4 +210,5 @@ lib/
 - Edge refraction works only in Chromium browsers.
 - **Browser-only storage.** Watchlists and positions live in this browser. They don't sync to other devices, and clearing site data erases them, so use **Export** to keep a backup.
 - **Portfolio cost basis** is converted to USD at today's exchange rate, not the rate on the day you bought. Positions are a single average cost per symbol, not individual lots, and there are no realized gains, dividends or taxes. It is a tracker, not a brokerage record.
-- **Movers and sectors are US-only,** because those are the screeners and sector funds Yahoo provides.
+- **Movers outside the US come from a fixed list of large caps,** because Yahoo's screeners only cover US listings. A small-cap surge in those markets won't appear.
+- **Government bond yields are US-only,** because Yahoo carries no other sovereign yields.
