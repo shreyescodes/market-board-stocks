@@ -1,13 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
   <title>MarketBoard</title>
-  <!-- A split-flap tile from a market board, showing "up" -->
-  <defs>
-    <clipPath id="tile"><rect width="180" height="180" rx="40"/></clipPath>
-  </defs>
+  <!-- A price line that traces an M and closes higher; the dot is the last price -->
+  <defs><clipPath id="tile"><rect width="180" height="180" rx="40"/></clipPath></defs>
   <g clip-path="url(#tile)">
     <rect width="180" height="180" fill="#1C1C1E"/>
-    <rect width="180" height="87" fill="#2C2C2E"/>
-    <path d="M90 47 L131 121 L49 121 Z" fill="#30D158" stroke="#30D158" stroke-width="12" stroke-linejoin="round"/>
-    <rect y="87" width="180" height="6" fill="#000"/>
+    <path d="M40 126 L65 58 L92 104 L136 50" fill="none" stroke="#FFFFFF" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="136" cy="50" r="16" fill="#1C1C1E"/>
+    <circle cx="136" cy="50" r="12" fill="#30D158"/>
   </g>
 </svg>

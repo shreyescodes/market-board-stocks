@@ -11,11 +11,11 @@ export const metadata: Metadata = {
   icons: {
     // ?v= busts browsers' favicon cache, which otherwise keeps showing the old template icon
     icon: [
-      { url: "/favicon.ico?v=2", sizes: "32x32" },
-      { url: "/icon.svg?v=2", type: "image/svg+xml" },
-      { url: "/icon-32.png?v=2", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.ico?v=3", sizes: "32x32" },
+      { url: "/icon.svg?v=3", type: "image/svg+xml" },
+      { url: "/icon-32.png?v=3", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/apple-icon.png?v=2",
+    apple: "/apple-icon.png?v=3",
   },
 }
 
