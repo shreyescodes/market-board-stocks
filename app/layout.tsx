@@ -9,11 +9,13 @@ export const metadata: Metadata = {
   description: "Markets dashboard, portfolio tracker and watchlists with live Yahoo Finance data",
   applicationName: "MarketBoard",
   icons: {
+    // ?v= busts browsers' favicon cache, which otherwise keeps showing the old template icon
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.ico?v=2", sizes: "32x32" },
+      { url: "/icon.svg?v=2", type: "image/svg+xml" },
+      { url: "/icon-32.png?v=2", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/apple-icon.png",
+    apple: "/apple-icon.png?v=2",
   },
 }
 
