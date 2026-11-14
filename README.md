@@ -128,8 +128,23 @@ Then open http://localhost:3000.
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the development server |
+| `npm run lint` | Lint with ESLint and Next's rules |
+| `npm run typecheck` | Type-check with TypeScript |
 | `npm run build` | Create a production build |
 | `npm start` | Serve the production build |
+
+## Continuous integration and deployment
+
+**CI.** Every pull request and every push to `main` runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on GitHub Actions. It does a clean install (`npm ci`), then lint, then type-check, then build, and fails on the first error. Type-checking is its own step because `next.config.mjs` sets `ignoreBuildErrors`, so a passing build alone doesn't prove the types are sound.
+
+A few ESLint rules are warnings rather than errors: the React Compiler rules (`set-state-in-effect`, `refs`, `purity`) and `no-explicit-any`. The code predates them, and `eslint.config.mjs` explains each one. They show up in the output without failing CI.
+
+**Deployment.** The app needs a server for `/api/stocks`, so it can't be hosted as static files. It deploys to [Vercel](https://vercel.com) through Vercel's GitHub app, with no workflow file or secrets in this repo:
+1. In Vercel, choose **Add New → Project** and import this repository. Next.js is detected automatically, and no environment variables are needed.
+2. Deploy. From then on, every push to `main` deploys to production, and every pull request gets its own preview URL, posted on the PR.
+3. Optional: in GitHub, under **Settings → Branches**, protect `main` and require the **Lint, type-check and build** check, so nothing merges with a red CI.
+
+On serverless hosts, each function instance keeps its own short-lived quote cache. Yahoo may also rate-limit cloud IP addresses sooner than a home connection. When that happens, the app shows **Reconnecting** with the last good prices rather than failing.
 
 ## API route
 
