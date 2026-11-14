@@ -1,3 +1,5 @@
+<img src="public/icon.svg" width="72" height="72" alt="MarketBoard icon: a split-flap tile showing an upward triangle" />
+
 # MarketBoard
 
 A markets dashboard, portfolio tracker and watchlist app with an Apple-style Liquid Glass interface, built with Next.js. Quotes, charts, index levels, rates, currencies, commodities, movers and ticker search come from Yahoo Finance through a small server route, so no API key is needed.

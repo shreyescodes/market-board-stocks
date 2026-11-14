@@ -6,22 +6,12 @@ import { AppShell } from "@/components/app-shell"
 
 export const metadata: Metadata = {
   title: { default: "MarketBoard", template: "%s · MarketBoard" },
-  description: "Live stock watchlist with real-time Yahoo Finance quotes",
-  generator: "v0.app",
+  description: "Markets dashboard, portfolio tracker and watchlists with live Yahoo Finance data",
+  applicationName: "MarketBoard",
   icons: {
     icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
     ],
     apple: "/apple-icon.png",
   },
