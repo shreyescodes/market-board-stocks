@@ -8,7 +8,7 @@ A markets dashboard, portfolio tracker and watchlist app with an Apple-style Liq
 
 ## Features
 
-A glass sidebar (a floating tab bar on phones) switches between three sections. Every symbol anywhere in the app opens its own page.
+A full-height glass sidebar switches between three sections and lists your watchlists, the way Music lists playlists. Hide it to an icon rail with the sidebar button or **⌃⌘S**; your choice is remembered. On medium-width screens it shows as the icon rail, and on phones it becomes a floating tab bar. Every symbol anywhere in the app opens its own page.
 
 ### Markets
 - **Market status and indexes.** The first tile shows whether a market is open, in pre-market, after hours, on a lunch break, closed or on holiday, with a countdown and a progress bar for the session. Tap it to see 16 markets worldwide with their local time and status, and pick one.
@@ -68,7 +68,8 @@ A glass sidebar (a floating tab bar on phones) switches between three sections. 
 
 The interface follows Apple's Liquid Glass approach: content sits on a plain black or white background, and glass is used only for the floating layer of controls.
 
-- **Glass surfaces.** The toolbar, the navigation sidebar, the phone tab bar, sheets and toasts are translucent with background blur, a thin highlight along the top edge and a soft shadow. Lists, charts and tables are plain content and never glass.
+- **Layout like a macOS app.** The sidebar is a full-height floating glass pane carrying the app name and the sidebar toggle. The toolbar (feed status, clock and appearance) floats over the content area only, and content softens as it scrolls beneath it.
+- **Glass surfaces.** The sidebar, the toolbar, the phone tab bar, sheets and toasts are translucent with background blur, a thin highlight along the top edge and a soft shadow. Lists, charts and tables are plain content and never glass.
 - **Edge refraction.** In Chromium browsers (Chrome, Edge, Brave, Arc) the toolbar and the phone tab bar also bend the content scrolling beneath them at their rims. This uses an SVG displacement map applied with `backdrop-filter`. Safari and Firefox get the frosted blur without the bending.
 - **System palette.** Colors are Apple's system values for labels, separators, fills, green, red and blue, with separate light and dark sets.
 - **Motion.** Prices roll digit by digit when they change. The navigation, range control and watchlist selection slide between items on spring animations, and sheets grow out of the control that opened them.
@@ -149,7 +150,7 @@ app/
   api/stocks/route.ts     Yahoo Finance proxy: quotes, charts, movers, profiles, search
   globals.css             Design tokens and the glass material
 components/
-  app-shell.tsx           Toolbar, glass sidebar navigation and phone tab bar
+  app-shell.tsx           Collapsible glass sidebar, page layout and phone tab bar
   workspace.tsx           Shared state: watchlists, positions and feed health
   markets-view.tsx        Markets page
   portfolio-view.tsx      Portfolio page
@@ -160,7 +161,7 @@ components/
   symbol-view.tsx         Symbol page
   stock-details.tsx       Price header, range control, chart, fundamentals
   market-bar.tsx          Market-status tile, index strip and their pickers
-  header.tsx              Floating glass toolbar
+  header.tsx              Floating glass toolbar (desktop) and top bar (phone)
   liquid-glass.tsx        Glass surface, edge refraction, rolling numbers, change pill
   sheet.tsx               Glass sheet used for pickers and forms
 hooks/

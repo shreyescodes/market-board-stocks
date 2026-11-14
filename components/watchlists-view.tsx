@@ -71,7 +71,7 @@ export function WatchlistsView() {
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-6">
-      <aside className="lg:sticky lg:top-[84px] lg:h-[calc(100vh-100px)] lg:self-start">
+      <aside className="lg:sticky lg:top-[68px] lg:h-[calc(100vh-80px)] lg:self-start">
         <WatchlistTable
           rows={rows}
           loaded={ready}
