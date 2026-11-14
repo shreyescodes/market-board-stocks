@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Plus, Search, X } from "lucide-react"
+import { ChevronDown, Plus, Search, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
-import { ChangePill, Glass, NumericText } from "./liquid-glass"
+import { ChangePill, NumericText } from "./liquid-glass"
 import type { Stock } from "@/lib/stock-types"
 import { formatPercent, formatPrice } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -14,6 +14,8 @@ interface WatchlistTableProps {
   rows: WatchlistRow[]
   loaded: boolean
   feedStatus: "connecting" | "live" | "stale" | "offline"
+  listName: string
+  onManageLists: () => void
   selectedSymbol: string | null
   onSelectStock: (symbol: string) => void
   onAddStock: (symbol: string) => void
@@ -26,6 +28,8 @@ export function WatchlistTable({
   rows,
   loaded,
   feedStatus,
+  listName,
+  onManageLists,
   selectedSymbol,
   onSelectStock,
   onAddStock,
@@ -76,11 +80,18 @@ export function WatchlistTable({
   }
 
   return (
-    <Glass className="flex h-full flex-col rounded-[28px] p-2.5">
+    <div className="flex h-full flex-col rounded-[28px] bg-surface p-2.5">
       {/* Large title row */}
       <div className="flex items-center justify-between px-2.5 pb-3 pt-2">
-        <div className="flex flex-col leading-none">
-          <h2 className="display text-[26px] font-bold">Watchlist</h2>
+        <div className="flex min-w-0 flex-col leading-none">
+          <button
+            onClick={onManageLists}
+            className="press group -ml-1 flex min-w-0 items-center gap-1 rounded-[10px] px-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
+            aria-label={`${listName}. Switch or manage watchlists`}
+          >
+            <h2 className="display truncate text-[24px] font-bold">{listName}</h2>
+            <ChevronDown className="h-5 w-5 shrink-0 text-label-2 transition-transform group-hover:translate-y-px" aria-hidden />
+          </button>
           <span className={cn("mt-1 text-[13px]", feedStatus === "offline" ? "text-down" : "text-label-2")}>
             {feedStatus === "offline"
               ? "Market data unavailable"
@@ -280,6 +291,6 @@ export function WatchlistTable({
           )}
         </AnimatePresence>
       </motion.div>
-    </Glass>
+    </div>
   )
 }

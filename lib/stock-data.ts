@@ -33,3 +33,33 @@ export async function fetchChart(symbol: string, timeframe: string): Promise<Cha
     return null
   }
 }
+
+export type Movers = { gainers: Stock[]; losers: Stock[]; active: Stock[]; stale: boolean }
+
+/** US market movers (Yahoo predefined screeners) */
+export async function fetchMovers(): Promise<Movers | null> {
+  try {
+    const res = await fetch(`/api/stocks?action=movers`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const tag = (list: Stock[] = []) => list.map((s) => ({ ...s, id: s.symbol }))
+    return { gainers: tag(data.gainers), losers: tag(data.losers), active: tag(data.active), stale: !!data.stale }
+  } catch {
+    return null
+  }
+}
+
+export type Profile = { sector: string | null; industry: string | null; country: string | null; quoteType: string | null }
+
+/** Sector / industry / country for each symbol (cached for a day on the server) */
+export async function fetchProfiles(symbols: string[]): Promise<Record<string, Profile> | null> {
+  if (!symbols.length) return {}
+  try {
+    const res = await fetch(`/api/stocks?action=profiles&symbols=${encodeURIComponent(symbols.join(","))}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.profiles ?? null
+  } catch {
+    return null
+  }
+}

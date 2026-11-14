@@ -20,7 +20,9 @@ export function formatPrice(n: number | null | undefined) {
 export function formatSigned(n: number | null | undefined, digits = 2) {
   if (n == null || !Number.isFinite(n)) return "—"
   const s = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })
-  return `${n > 0 ? "+" : n < 0 ? "−" : ""}${s}`
+  // A value that rounds to zero gets no sign ("0.00%", not "−0.00%")
+  const zero = Number(Math.abs(n).toFixed(digits)) === 0
+  return `${zero ? "" : n > 0 ? "+" : "−"}${s}`
 }
 
 export function formatPercent(n: number | null | undefined) {

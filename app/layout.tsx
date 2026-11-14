@@ -2,9 +2,10 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
+import { AppShell } from "@/components/app-shell"
 
 export const metadata: Metadata = {
-  title: "MarketBoard",
+  title: { default: "MarketBoard", template: "%s · MarketBoard" },
   description: "Live stock watchlist with real-time Yahoo Finance quotes",
   generator: "v0.app",
   icons: {
@@ -44,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        {children}
+        <AppShell>{children}</AppShell>
         <Analytics />
       </body>
     </html>

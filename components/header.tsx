@@ -46,7 +46,7 @@ export function Header({ theme, feed, onToggleTheme }: HeaderProps) {
       <div
         ref={barRef}
         style={style}
-        className="glass mx-auto flex h-[52px] max-w-[1400px] items-center justify-between rounded-full pl-5 pr-1.5"
+        className="glass mx-auto flex h-[52px] max-w-[1600px] items-center justify-between rounded-full pl-5 pr-1.5"
       >
         <div className="flex items-baseline gap-2.5">
           <span className="display text-[17px] font-semibold">MarketBoard</span>

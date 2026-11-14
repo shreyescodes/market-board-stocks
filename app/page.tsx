@@ -1,5 +1,8 @@
-import { StockTickerPage } from "@/components/stock-ticker-page"
+import type { Metadata } from "next"
+import { MarketsView } from "@/components/markets-view"
 
-export default function Home() {
-  return <StockTickerPage />
+export const metadata: Metadata = { title: "Markets" }
+
+export default function MarketsPage() {
+  return <MarketsView />
 }

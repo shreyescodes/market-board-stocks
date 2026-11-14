@@ -48,6 +48,10 @@ export function Sheet({
   const returnFocus = useRef<HTMLElement | null>(null)
   const origin = useRef({ x: 0, y: 24 })
   const wasOpen = useRef(false)
+  // Callers often pass an inline onClose; keep the latest in a ref so re-renders (e.g. price
+  // refreshes) don't re-run the open/close effect and steal focus from an open sheet
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   // Capture the trigger (for focus return) and the morph origin the moment the sheet opens
   if (open && !wasOpen.current && typeof window !== "undefined") {
@@ -60,7 +64,7 @@ export function Sheet({
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && onClose()
+    const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && onCloseRef.current()
     window.addEventListener("keydown", onKey)
     // Focus the first field if there is one, otherwise the dialog itself
     const t = setTimeout(() => {
@@ -75,7 +79,7 @@ export function Sheet({
       const el = returnFocus.current
       if (el && document.contains(el)) el.focus({ preventScroll: true })
     }
-  }, [open, onClose])
+  }, [open])
 
   // Keep Tab inside the sheet while it is open
   const trapTab = (e: KeyboardEvent<HTMLDivElement>) => {
