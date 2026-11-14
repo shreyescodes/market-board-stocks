@@ -64,27 +64,30 @@ function tickLabel(t: number, tf: Timeframe, timeZone: string) {
 
 export function StockDetails({ stock }: StockDetailsProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>("1D")
-  const [chart, setChart] = useState<ChartData | null>(null)
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
-  const [hover, setHover] = useState<Row | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  // Chart data and the hovered point are tagged with the request they belong to, so switching
+  // symbol or range shows "loading" and clears the hover without an extra render pass
+  const request = `${stock.symbol}|${timeframe}|${reloadKey}`
+  const [loaded, setLoaded] = useState<{ request: string; chart: ChartData | null; status: "ready" | "error" } | null>(null)
+  const chart = loaded?.request === request ? loaded.chart : null
+  const status = loaded?.request === request ? loaded.status : "loading"
+  const [hovered, setHovered] = useState<{ request: string; row: Row } | null>(null)
+  const hover = hovered?.request === request ? hovered.row : null
+  const setHover = (row: Row | null) => setHovered(row ? { request, row } : null)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   // History loads on symbol/range change; the live 1D session also refreshes every minute
   useEffect(() => {
     let active = true
-    setChart(null)
-    setStatus("loading")
-    setHover(null)
+    const key = `${stock.symbol}|${timeframe}|${reloadKey}`
 
     const load = async (refresh: boolean) => {
       const data = await fetchChart(stock.symbol, timeframe)
       if (!active) return
       if (data && data.points.length > 1) {
-        setChart(data)
-        setStatus("ready")
+        setLoaded({ request: key, chart: data, status: "ready" })
       } else if (!refresh) {
-        setStatus("error") // a failed background refresh keeps the last good chart
+        setLoaded({ request: key, chart: null, status: "error" }) // a failed background refresh keeps the last good chart
       }
     }
     load(false)
@@ -290,9 +293,9 @@ export function StockDetails({ stock }: StockDetailsProps) {
                 key={`${stock.symbol}-${timeframe}`}
                 data={rows}
                 margin={{ top: 16, right: 0, left: 0, bottom: 0 }}
-                onMouseMove={(s: any) => {
-                  const p = s?.activePayload?.[0]?.payload as Row | undefined
-                  if (p) setHover((h) => (h?.i === p.i ? h : p))
+                onMouseMove={(s: { activePayload?: { payload?: Row }[] }) => {
+                  const p = s?.activePayload?.[0]?.payload
+                  if (p && p.i !== hover?.i) setHover(p)
                 }}
                 onMouseLeave={() => setHover(null)}
               >

@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
+import { useEffect, useEffectEvent, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import { Search, X } from "lucide-react"
+import { useHydrated } from "@/hooks/use-browser"
 
 const spring = { type: "spring", stiffness: 380, damping: 34, mass: 0.9 } as const
 
@@ -43,28 +44,30 @@ export function Sheet({
   onClose: () => void
   children: ReactNode
 }) {
-  const [mounted, setMounted] = useState(false)
+  const hydrated = useHydrated()
   const dialogRef = useRef<HTMLDivElement>(null)
-  const returnFocus = useRef<HTMLElement | null>(null)
-  const origin = useRef({ x: 0, y: 24 })
-  const wasOpen = useRef(false)
-  // Callers often pass an inline onClose; keep the latest in a ref so re-renders (e.g. price
-  // refreshes) don't re-run the open/close effect and steal focus from an open sheet
-  const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
 
-  // Capture the trigger (for focus return) and the morph origin the moment the sheet opens
-  if (open && !wasOpen.current && typeof window !== "undefined") {
-    returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    origin.current = originOffset()
+  // Capture the trigger (for focus return) and the morph origin the moment the sheet opens.
+  // This adjusts state during render, so both are ready for the very first open frame.
+  const [opened, setOpened] = useState<{ open: boolean; trigger: HTMLElement | null; origin: { x: number; y: number } }>({
+    open: false,
+    trigger: null,
+    origin: { x: 0, y: 24 },
+  })
+  if (open !== opened.open && typeof document !== "undefined") {
+    const trigger = open && document.activeElement instanceof HTMLElement ? document.activeElement : opened.trigger
+    setOpened({ open, trigger, origin: open ? originOffset() : opened.origin })
   }
-  wasOpen.current = open
+  const returnTo = opened.trigger
+  const origin = opened.origin
 
-  useEffect(() => setMounted(true), [])
+  // Callers often pass an inline onClose; an effect event always calls the latest one without
+  // re-running the open/close effect, which would steal focus from an open sheet on every re-render
+  const closeOnEscape = useEffectEvent(() => onClose())
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && onCloseRef.current()
+    const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && closeOnEscape()
     window.addEventListener("keydown", onKey)
     // Focus the first field if there is one, otherwise the dialog itself
     const t = setTimeout(() => {
@@ -76,10 +79,9 @@ export function Sheet({
     return () => {
       window.removeEventListener("keydown", onKey)
       clearTimeout(t)
-      const el = returnFocus.current
-      if (el && document.contains(el)) el.focus({ preventScroll: true })
+      if (returnTo && document.contains(returnTo)) returnTo.focus({ preventScroll: true })
     }
-  }, [open])
+  }, [open, returnTo])
 
   // Keep Tab inside the sheet while it is open
   const trapTab = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -97,8 +99,8 @@ export function Sheet({
     }
   }
 
-  if (!mounted) return null
-  const from = { opacity: 0, scale: 0.35, x: origin.current.x, y: origin.current.y }
+  if (!hydrated) return null
+  const from = { opacity: 0, scale: 0.35, x: origin.x, y: origin.y }
 
   return createPortal(
     <AnimatePresence>

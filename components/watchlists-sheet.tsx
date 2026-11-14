@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import { Check, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Sheet } from "./sheet"
@@ -16,13 +16,17 @@ export function WatchlistsSheet({ open, onClose }: { open: boolean; onClose: () 
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState("")
 
-  useEffect(() => {
-    if (open) return
-    setEditing(null)
-    setConfirmDelete(null)
-    setCreating(false)
-    setNewName("")
-  }, [open])
+  // Leave no half-finished edit behind when the sheet closes (adjusting state during render)
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (!open) {
+      setEditing(null)
+      setConfirmDelete(null)
+      setCreating(false)
+      setNewName("")
+    }
+  }
 
   const lists = workspace?.watchlists ?? []
 

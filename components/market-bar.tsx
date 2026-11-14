@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Check, ChevronDown, Plus, X } from "lucide-react"
 import { NumericText } from "./liquid-glass"
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { fetchQuotes } from "@/lib/stock-data"
 import { formatPercent, formatPrice, formatSigned } from "@/lib/format"
 import { usePoll } from "@/hooks/use-poll"
+import { useNow, useStoredString, writeStored } from "@/hooks/use-browser"
 import type { Stock } from "@/lib/stock-types"
 
 type IndexData = Stock
@@ -19,57 +20,34 @@ type IndexData = Stock
 const INDICES_KEY = "marketboard.indicesByMarket"
 const spring = { type: "spring", stiffness: 420, damping: 34, mass: 0.8 } as const
 
-function readStorage<T>(key: string, parse: (raw: string) => T | null, fallback: T): T {
+/** Saved index choices, validated: unknown markets and symbols are dropped */
+function parseSelection(raw: string | null | undefined): Record<string, string[]> {
+  if (!raw) return {}
   try {
-    const raw = localStorage.getItem(key)
-    if (raw == null) return fallback
-    return parse(raw) ?? fallback
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}
+    const clean: Record<string, string[]> = {}
+    for (const [id, list] of Object.entries(parsed)) {
+      if (!marketById(id) || !Array.isArray(list)) continue
+      clean[id] = list.filter((s) => typeof s === "string" && indexMeta(id, s)).slice(0, MAX_INDICES)
+    }
+    return clean
   } catch {
-    return fallback
+    return {}
   }
-}
-function writeStorage(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value)
-  } catch {}
 }
 
 export function MarketBar() {
-  const [now, setNow] = useState<Date | null>(null)
+  const now = useNow()
   const { market, setMarket, ready } = useMarket()
-  // Each market keeps its own index selection
-  const [selectionByMarket, setSelectionByMarket] = useState<Record<string, string[]>>({})
+  // Each market keeps its own index selection, restored after hydration and synced across tabs
+  const savedSelection = useStoredString(INDICES_KEY)
+  const selectionByMarket = useMemo(() => parseSelection(savedSelection), [savedSelection])
   const [quotes, setQuotes] = useState<Record<string, IndexData>>({})
   const [live, setLive] = useState<{ at: number; byMarket: Record<string, LiveSession> } | null>(null)
   const [failed, setFailed] = useState(false)
   const [indexPickerOpen, setIndexPickerOpen] = useState(false)
   const [marketPickerOpen, setMarketPickerOpen] = useState(false)
-
-  // Restore saved choices after mount (localStorage is client-only)
-  useEffect(() => {
-    setSelectionByMarket(
-      readStorage(
-        INDICES_KEY,
-        (raw) => {
-          const parsed = JSON.parse(raw)
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
-          const clean: Record<string, string[]> = {}
-          for (const [id, list] of Object.entries(parsed)) {
-            if (!marketById(id) || !Array.isArray(list)) continue
-            clean[id] = list.filter((s) => typeof s === "string" && indexMeta(id, s)).slice(0, MAX_INDICES)
-          }
-          return clean
-        },
-        {},
-      ),
-    )
-  }, [])
-
-  useEffect(() => {
-    setNow(new Date())
-    const timer = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(timer)
-  }, [])
 
   const selected = selectionByMarket[market.id] ?? defaultIndexesFor(market.id)
   const selectedKey = selected.join(",")
@@ -119,9 +97,7 @@ export function MarketBar() {
   const status = now ? getMarketStatus(market, now, liveFor(market.id)) : null
 
   const updateIndices = (next: string[]) => {
-    const all = { ...selectionByMarket, [market.id]: next }
-    setSelectionByMarket(all)
-    writeStorage(INDICES_KEY, JSON.stringify(all))
+    writeStored(INDICES_KEY, JSON.stringify({ ...selectionByMarket, [market.id]: next }))
   }
   const removeIndex = (symbol: string) => updateIndices(selected.filter((s) => s !== symbol))
   const addIndex = (symbol: string) => {
@@ -357,9 +333,12 @@ function MarketPicker({
   onClose: () => void
 }) {
   const [query, setQuery] = useState("")
-  useEffect(() => {
+  // Clear the search when the sheet closes (adjusting state during render, not in an effect)
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
     if (!open) setQuery("")
-  }, [open])
+  }
 
   const rows = useMemo(() => {
     if (!now) return []

@@ -173,7 +173,7 @@ Then open http://localhost:3000.
 
 **CI.** Every pull request and every push to `main` runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on GitHub Actions. It does a clean install (`npm ci`), then lint, then type-check, then build, and fails on the first error. Type-checking is its own step because `next.config.mjs` sets `ignoreBuildErrors`, so a passing build alone doesn't prove the types are sound.
 
-A few ESLint rules are warnings rather than errors: the React Compiler rules (`set-state-in-effect`, `refs`, `purity`) and `no-explicit-any`. The code predates them, and `eslint.config.mjs` explains each one. They show up in the output without failing CI.
+Lint uses Next's Core Web Vitals and TypeScript rules as they ship, including the React Compiler rules (`set-state-in-effect`, `refs`, `purity`), with no overrides or `eslint-disable` comments. Browser-only state (saved choices, media queries, the clock) is read through `useSyncExternalStore` in `hooks/use-browser.ts`, which is what keeps those rules satisfied.
 
 **Deployment.** The app needs a server for `/api/stocks`, so it can't be hosted as static files. It deploys to [Vercel](https://vercel.com) through Vercel's GitHub app, with no workflow file or secrets in this repo:
 1. In Vercel, choose **Add New → Project** and import this repository. Next.js is detected automatically, and no environment variables are needed.
@@ -241,6 +241,7 @@ components/
 hooks/
   use-poll.ts             Polling with back-off that pauses in hidden tabs
   use-quotes.ts           Batched live quotes for any set of symbols
+  use-browser.ts          Hydration-safe browser state: saved choices, media queries, the clock
 lib/
   storage.ts              Browser storage, migration and backup files
   portfolio.ts            Portfolio valuation in USD and allocation

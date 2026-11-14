@@ -4,7 +4,6 @@ import {
   forwardRef,
   useEffect,
   useId,
-  useRef,
   useState,
   type CSSProperties,
   type HTMLAttributes,
@@ -161,11 +160,10 @@ export function NumericText({
   format: (n: number) => string
   className?: string
 }) {
-  const prev = useRef(value)
-  const dir = value > prev.current ? 1 : value < prev.current ? -1 : 0
-  useEffect(() => {
-    prev.current = value
-  }, [value])
+  // Roll up for a rise and down for a fall: remember the previous value and the last direction
+  const [last, setLast] = useState({ value, dir: 0 })
+  if (value !== last.value) setLast({ value, dir: value > last.value ? 1 : -1 })
+  const dir = last.dir
 
   const text = format(value)
   const chars = text.split("")

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useEffectEvent } from "react"
 
 /**
  * Runs `task` now and then every `intervalMs`.
@@ -9,8 +9,8 @@ import { useEffect, useRef } from "react"
  * - Restarts whenever `key` changes
  */
 export function usePoll(task: () => Promise<boolean>, intervalMs: number, key: string, enabled = true) {
-  const taskRef = useRef(task)
-  taskRef.current = task
+  // Always runs the latest task without restarting the schedule on every render
+  const runTask = useEffectEvent(task)
 
   useEffect(() => {
     if (!enabled) return
@@ -31,7 +31,7 @@ export function usePoll(task: () => Promise<boolean>, intervalMs: number, key: s
       running = true
       let ok = false
       try {
-        ok = await taskRef.current()
+        ok = await runTask()
       } catch {
         ok = false
       }

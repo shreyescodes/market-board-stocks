@@ -38,21 +38,20 @@ export function WatchlistTable({
   const [newSymbol, setNewSymbol] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [isAdding, setIsAdding] = useState(false)
-  const [suggestions, setSuggestions] = useState<Array<{ symbol: string; name: string; exchange: string }>>([])
+  const [results, setResults] = useState<Array<{ symbol: string; name: string; exchange: string }>>([])
+  // Nothing typed, nothing suggested
+  const suggestions = newSymbol.trim() ? results : []
   const addInputRef = useRef<HTMLInputElement>(null)
 
   // Debounced autocomplete against Yahoo Finance search
   useEffect(() => {
-    if (!newSymbol.trim()) {
-      setSuggestions([])
-      return
-    }
+    if (!newSymbol.trim()) return
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/stocks?action=search&query=${encodeURIComponent(newSymbol)}`)
         if (res.ok) {
           const data = await res.json()
-          setSuggestions(data.results || [])
+          setResults(data.results || [])
         }
       } catch (e) {
         console.error("Suggestions fetch error:", e)
@@ -69,7 +68,7 @@ export function WatchlistTable({
 
   const closeAdd = () => {
     setNewSymbol("")
-    setSuggestions([])
+    setResults([])
     setIsAdding(false)
   }
 

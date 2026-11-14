@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { toast } from "sonner"
 import { loadWorkspace, newId, saveWorkspace, type Position, type Watchlist, type Workspace } from "@/lib/storage"
 import type { QuotesResult } from "@/lib/stock-data"
+import { useHydrated } from "@/hooks/use-browser"
 
 /* ───────────────────────── Workspace: watchlists + portfolio ───────────────────────── */
 
@@ -27,26 +28,34 @@ type WorkspaceApi = {
 const WorkspaceContext = createContext<WorkspaceApi | null>(null)
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [workspace, setWorkspace] = useState<Workspace | null>(null)
+  // The saved workspace is read once hydration is done (localStorage is browser-only);
+  // after that, edits and changes from other tabs replace it
+  const hydrated = useHydrated()
+  const restored = useMemo(() => (hydrated ? loadWorkspace() : null), [hydrated])
+  const [changed, setChanged] = useState<Workspace | null>(null)
+  const workspace = changed ?? restored
 
+  // Keep several open tabs in sync
   useEffect(() => {
-    setWorkspace(loadWorkspace())
-    // Keep several open tabs in sync
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "marketboard.workspace.v1") setWorkspace(loadWorkspace())
+      if (e.key === "marketboard.workspace.v1") setChanged(loadWorkspace())
     }
     window.addEventListener("storage", onStorage)
     return () => window.removeEventListener("storage", onStorage)
   }, [])
 
-  const update = useCallback((fn: (w: Workspace) => Workspace) => {
-    setWorkspace((prev) => {
-      if (!prev) return prev
-      const next = fn(prev)
-      saveWorkspace(next)
-      return next
-    })
-  }, [])
+  const update = useCallback(
+    (fn: (w: Workspace) => Workspace) => {
+      setChanged((prev) => {
+        const current = prev ?? restored
+        if (!current) return prev
+        const next = fn(current)
+        saveWorkspace(next)
+        return next
+      })
+    },
+    [restored],
+  )
 
   const mapList = (w: Workspace, id: string, fn: (l: Watchlist) => Watchlist): Workspace => ({
     ...w,
