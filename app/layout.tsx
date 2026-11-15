@@ -4,10 +4,28 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { AppShell } from "@/components/app-shell"
 
+const SITE_URL = "https://market-board-ecru.vercel.app"
+const DESCRIPTION =
+  "Pick any of 16 markets and see its indexes, currency, commodities in local money, sectors and movers. Plus a portfolio and watchlists. Free, no sign-up."
+
 export const metadata: Metadata = {
+  // Absolute URLs for the link-preview image (opengraph-image.png in this folder)
+  metadataBase: new URL(SITE_URL),
   title: { default: "MarketBoard", template: "%s · MarketBoard" },
-  description: "Markets dashboard, portfolio tracker and watchlists with live Yahoo Finance data",
+  description: DESCRIPTION,
   applicationName: "MarketBoard",
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "MarketBoard",
+    title: "MarketBoard · Live markets for 16 countries",
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MarketBoard · Live markets for 16 countries",
+    description: DESCRIPTION,
+  },
   icons: {
     // ?v= busts browsers' favicon cache, which otherwise keeps showing the old template icon
     icon: [
@@ -26,7 +44,6 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 }
 
 export default function RootLayout({
