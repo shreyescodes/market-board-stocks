@@ -1,7 +1,8 @@
 // Typo-tolerant matching for search. Yahoo's search has no spelling correction ("appel", "relaince" and
 // "nvidea" all return nothing), so the API widens the net with prefix searches and ranks what comes back here.
 
-export type Candidate = { symbol: string; name: string; exchange: string; type?: string }
+/** aliases: other names people use for it ("Google" for Alphabet), matched like the name but never shown */
+export type Candidate = { symbol: string; name: string; exchange: string; type?: string; aliases?: string[] }
 
 // Words that say nothing about which company it is
 const FILLER = new Set(["the", "inc", "corp", "corporation", "co", "company", "ltd", "limited", "plc", "sa", "ag", "nv", "se", "holdings", "group", "of", "and", "class"])
@@ -56,9 +57,13 @@ export function matchScore(query: string, c: Candidate): number | null {
   const typed = words(query)
   if (!typed.length) return null
   const ticker = c.symbol.toLowerCase().replace(/^\^/, "").replace(/\.[a-z]{1,3}$/, "")
-  // Also try the name run together, so "tatamotors" or "coalindia" typed as one word still match
-  const nameWords = words(c.name)
-  const targets = [...nameWords, nameWords.join(""), ticker]
+  // Each name is also tried run together, so "tatamotors" or "jpmorgan" typed as one word still match
+  const targets = [ticker]
+  for (const name of [c.name, ...(c.aliases ?? [])]) {
+    const ws = words(name)
+    targets.push(...ws)
+    if (ws.length > 1) targets.push(ws.join(""))
+  }
   let total = 0
   for (const w of typed) {
     const best = Math.min(...targets.map((t) => wordTypos(w, t)))

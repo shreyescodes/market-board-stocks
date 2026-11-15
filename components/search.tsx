@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { useRouter } from "next/navigation"
 import { Check, Clock, Plus, Search as SearchIcon, X } from "lucide-react"
 import { toast } from "sonner"
@@ -49,6 +49,7 @@ export function SearchSheet({ open, onClose }: { open: boolean; onClose: () => v
   const [found, setFound] = useState<{ query: string; results: Result[]; fuzzy?: boolean }>({ query: "", results: [] })
   const [quotes, setQuotes] = useState<Record<string, Stock>>({})
   const [active, setActive] = useState(0)
+  const fieldRef = useRef<HTMLInputElement>(null)
   const recentRaw = useStoredString(RECENT_KEY)
   const recent = useMemo(() => parseRecent(recentRaw), [recentRaw])
 
@@ -169,6 +170,7 @@ export function SearchSheet({ open, onClose }: { open: boolean; onClose: () => v
       <div className="flex h-[60px] shrink-0 items-center gap-3 border-b border-separator pl-5 pr-3">
         <SearchIcon className="h-5 w-5 shrink-0 text-label-2" aria-hidden />
         <input
+          ref={fieldRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKey}
@@ -182,7 +184,11 @@ export function SearchSheet({ open, onClose }: { open: boolean; onClose: () => v
         />
         {query && (
           <button
-            onClick={() => setQuery("")}
+            onClick={() => {
+              setQuery("")
+              // The button disappears once the field is empty; keep typing where you were
+              fieldRef.current?.focus()
+            }}
             aria-label="Clear search"
             className="press flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-tint/60"
           >
