@@ -19,8 +19,10 @@
   --tint-fill: #0066cc;
   --warn: #c93400;
 
-  --bg: #ffffff;
-  --surface: #f2f2f7; /* secondarySystemBackground */
+  /* Grouped style: a grey page with white cards, as in Settings and Stocks */
+  --bg: #f2f2f7; /* systemGroupedBackground */
+  --surface: #ffffff; /* secondarySystemGroupedBackground */
+  --surface-2: #f2f2f7;
   --label: #000000;
   --label-2: rgba(60, 60, 67, 0.78);
   --label-3: rgba(60, 60, 67, 0.3); /* decorative only, never text */
@@ -28,8 +30,12 @@
   --fill: rgba(120, 120, 128, 0.12); /* systemFill (controls on glass) */
   --fill-hover: rgba(120, 120, 128, 0.18);
 
+  /* Tints for change pills and heatmap tiles */
+  --up-soft: rgba(30, 123, 52, 0.1);
+  --down-soft: rgba(215, 0, 21, 0.08);
+
   /* Glass */
-  --glass: rgba(242, 242, 246, 0.66);
+  --glass: rgba(255, 255, 255, 0.62);
   --glass-solid: rgba(250, 250, 252, 0.86);
   --glass-edge: rgba(0, 0, 0, 0.08);
   --glass-hi: rgba(255, 255, 255, 1);
@@ -77,6 +83,9 @@
 
   --bg: #000000;
   --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --up-soft: rgba(48, 209, 88, 0.14);
+  --down-soft: rgba(255, 69, 58, 0.14);
   --label: #ffffff;
   --label-2: rgba(235, 235, 245, 0.6);
   --label-3: rgba(235, 235, 245, 0.3);
@@ -127,6 +136,9 @@
   --color-flat-fill: var(--flat-fill);
   --color-warn: var(--warn);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-up-soft: var(--up-soft);
+  --color-down-soft: var(--down-soft);
   --color-separator: var(--separator);
   --color-label-2: var(--label-2);
   --color-label-3: var(--label-3);

@@ -142,8 +142,8 @@ function planFor(market: Market, y: number, m: number, d: number): DayPlan {
   return { trading: sessions.length > 0, sessions, holiday }
 }
 
-/** First trading start strictly after `t` on day offset `fromDay` or later */
-function nextOpen(market: Market, y: number, m: number, d: number, t: number, fromDay: number) {
+/** First trading start strictly after `t` on day offset `fromDay` or later, in seconds from `t` */
+function nextOpenAt(market: Market, y: number, m: number, d: number, t: number, fromDay: number) {
   for (let off = fromDay; off <= 21; off++) {
     const day = shiftDate(y, m, d, off)
     const plan = planFor(market, day.y, day.m, day.d)
@@ -151,6 +151,15 @@ function nextOpen(market: Market, y: number, m: number, d: number, t: number, fr
     const start = market.pre && !plan.holiday?.lateOpen ? toSec(market.pre) : plan.sessions[0][0]
     const until = off * 86400 + start - t
     if (until <= 0) continue
+    return { off, day, start, until }
+  }
+  return null
+}
+
+function nextOpen(market: Market, y: number, m: number, d: number, t: number, fromDay: number) {
+  const next = nextOpenAt(market, y, m, d, t, fromDay)
+  if (next) {
+    const { off, day, start, until } = next
     const what = market.pre ? "Pre-market" : "Opens"
     if (until < 86400) return `${what} in ${fmtIn(until)}`
     const when =
@@ -161,6 +170,45 @@ function nextOpen(market: Market, y: number, m: number, d: number, t: number, fr
   }
   return ""
 }
+
+/** Seconds until the market next opens (pre-market for the US), from the schedule alone */
+export function secondsUntilOpen(market: Market, now: Date) {
+  const { y, m, d, seconds } = localParts(now, market.timeZone)
+  return nextOpenAt(market, y, m, d, seconds, 0)?.until ?? null
+}
+
+/** Regular-session bounds as clock labels, for a session progress bar: ["9:15 AM", "3:30 PM"] */
+export function sessionLabels(market: Market) {
+  const first = market.sessions[0][0]
+  const last = market.sessions[market.sessions.length - 1][1]
+  return { pre: market.pre ? fmtClock(toSec(market.pre)) : null, open: fmtClock(toSec(first)), close: fmtClock(toSec(last)) }
+}
+
+// Yahoo symbol suffix → market id; no suffix means a US listing
+const SUFFIX_MARKET: Record<string, string> = {
+  TO: "ca", V: "ca", SA: "br", L: "uk", DE: "de", F: "de", PA: "fr", SW: "ch", SR: "sa", JO: "za",
+  NS: "in", BO: "in", SS: "cn", SZ: "cn", HK: "hk", T: "jp", KS: "kr", KQ: "kr", SI: "sg", AX: "au",
+}
+
+/** The market a listing trades in, from its Yahoo suffix (indexes and FX have none of their own) */
+export function marketForSymbol(symbol: string) {
+  if (/[=^]/.test(symbol) || symbol.includes("-USD")) return null
+  const dot = symbol.lastIndexOf(".")
+  const id = dot > 0 ? SUFFIX_MARKET[symbol.slice(dot + 1).toUpperCase()] : "us"
+  return id ? (marketById(id) ?? null) : null
+}
+
+// Yahoo's exchange names and codes → the names people use
+const EXCHANGE_NAMES: Record<string, string> = {
+  NMS: "NASDAQ", NGM: "NASDAQ", NCM: "NASDAQ", NasdaqGS: "NASDAQ", NasdaqGM: "NASDAQ", NasdaqCM: "NASDAQ",
+  NYQ: "NYSE", NYSE: "NYSE", PCX: "NYSE Arca", NYSEArca: "NYSE Arca", ASE: "NYSE American",
+  NSI: "NSE", NSE: "NSE", BSE: "BSE", BOM: "BSE", LSE: "LSE", GER: "Xetra", XETRA: "Xetra", Paris: "Euronext", PAR: "Euronext",
+  EBS: "SIX", "Swiss Exchange": "SIX", SAU: "Tadawul", Saudi: "Tadawul", JNB: "JSE", Johannesburg: "JSE",
+  SHH: "SSE", Shanghai: "SSE", SHZ: "SZSE", Shenzhen: "SZSE", HKG: "HKEX", HKSE: "HKEX", JPX: "TSE", Tokyo: "TSE",
+  KSC: "KRX", KOE: "KOSDAQ", KOSDAQ: "KOSDAQ", SES: "SGX", ASX: "ASX", TOR: "TSX", Toronto: "TSX", SAO: "B3", "São Paulo": "B3",
+}
+
+export const exchangeName = (raw?: string | null) => (raw ? (EXCHANGE_NAMES[raw] ?? raw) : "")
 
 export function getMarketStatus(market: Market, now: Date, live?: LiveSession | null): MarketStatus {
   const { y, m, d, seconds: t } = localParts(now, market.timeZone)
