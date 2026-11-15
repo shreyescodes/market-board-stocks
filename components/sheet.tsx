@@ -14,7 +14,7 @@ if (typeof window !== "undefined") {
   window.addEventListener("pointerdown", (e) => (lastPress = { x: e.clientX, y: e.clientY, at: Date.now() }), true)
 }
 
-function originOffset() {
+function originOffset(palette = false) {
   if (typeof window === "undefined") return { x: 0, y: 0 }
   let point: { x: number; y: number } | null = null
   if (lastPress && Date.now() - lastPress.at < 1000) point = lastPress
@@ -24,7 +24,8 @@ function originOffset() {
   }
   if (!point) return { x: 0, y: 24 }
   const centered = window.matchMedia("(min-width: 640px)").matches
-  const targetY = centered ? window.innerHeight / 2 : window.innerHeight - 220
+  // Roughly where the dialog's centre lands: the palette sits near the top, sheets centre or rise from the bottom
+  const targetY = palette ? (centered ? window.innerHeight * 0.12 : 12) + 160 : centered ? window.innerHeight / 2 : window.innerHeight - 220
   return { x: point.x - window.innerWidth / 2, y: point.y - targetY }
 }
 
@@ -37,13 +38,18 @@ export function Sheet({
   subtitle,
   onClose,
   children,
+  variant = "sheet",
 }: {
   open: boolean
+  /** Shown as the heading, and always the dialog's accessible name */
   title: string
   subtitle?: ReactNode
   onClose: () => void
   children: ReactNode
+  /** "palette": a Spotlight-style panel near the top of the screen, no title bar */
+  variant?: "sheet" | "palette"
 }) {
+  const palette = variant === "palette"
   const hydrated = useHydrated()
   const dialogRef = useRef<HTMLDivElement>(null)
 
@@ -56,7 +62,7 @@ export function Sheet({
   })
   if (open !== opened.open && typeof document !== "undefined") {
     const trigger = open && document.activeElement instanceof HTMLElement ? document.activeElement : opened.trigger
-    setOpened({ open, trigger, origin: open ? originOffset() : opened.origin })
+    setOpened({ open, trigger, origin: open ? originOffset(palette) : opened.origin })
   }
   const returnTo = opened.trigger
   const origin = opened.origin
@@ -106,7 +112,11 @@ export function Sheet({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-end justify-center p-3 sm:items-center"
+          className={
+            palette
+              ? "fixed inset-0 z-[100] flex items-start justify-center px-3 pt-[max(12px,env(safe-area-inset-top))] sm:pt-[12vh]"
+              : "fixed inset-0 z-[100] flex items-end justify-center p-3 sm:items-center"
+          }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -123,21 +133,27 @@ export function Sheet({
             animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
             exit={{ ...from, transition: { duration: 0.18, ease: "easeIn" } }}
             transition={spring}
-            className="glass glass-solid relative flex max-h-[78vh] w-full max-w-[440px] flex-col rounded-[28px] text-foreground outline-none"
+            className={
+              palette
+                ? "glass glass-solid relative flex max-h-[min(640px,76vh)] w-full max-w-[640px] flex-col overflow-hidden rounded-[26px] text-foreground outline-none"
+                : "glass glass-solid relative flex max-h-[78vh] w-full max-w-[440px] flex-col rounded-[28px] text-foreground outline-none"
+            }
           >
-            <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-4">
-              <div className="flex min-w-0 flex-col">
-                <h3 className="display text-[20px] font-bold">{title}</h3>
-                {subtitle && <span className="text-[13px] text-label-2">{subtitle}</span>}
+            {!palette && (
+              <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-4">
+                <div className="flex min-w-0 flex-col">
+                  <h3 className="display text-[20px] font-bold">{title}</h3>
+                  {subtitle && <span className="text-[13px] text-label-2">{subtitle}</span>}
+                </div>
+                <button
+                  onClick={onClose}
+                  className="press fill flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-label-2 outline-none hover:bg-fill-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-tint/60"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" strokeWidth={2.5} />
+                </button>
               </div>
-              <button
-                onClick={onClose}
-                className="press fill flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-label-2 outline-none hover:bg-fill-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-tint/60"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" strokeWidth={2.5} />
-              </button>
-            </div>
+            )}
             {children}
           </motion.div>
         </motion.div>
