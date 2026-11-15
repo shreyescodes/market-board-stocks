@@ -313,3 +313,34 @@ export function getMarketStatus(market: Market, now: Date, live?: LiveSession | 
   }
   return { state: "closed", label: "Closed", detail: next, progress: 0, localTime, color: "var(--label-3)" }
 }
+
+// Desk abbreviations for each exchange's zone; daylight-saving zones pick by the current offset
+const ZONE_NAMES: Record<string, string | ((offsetMin: number) => string)> = {
+  us: (o) => (o === -240 ? "EDT" : "EST"),
+  ca: (o) => (o === -240 ? "EDT" : "EST"),
+  br: "BRT",
+  uk: (o) => (o === 60 ? "BST" : "GMT"),
+  de: (o) => (o === 120 ? "CEST" : "CET"),
+  fr: (o) => (o === 120 ? "CEST" : "CET"),
+  ch: (o) => (o === 120 ? "CEST" : "CET"),
+  sa: "AST",
+  za: "SAST",
+  in: "IST",
+  cn: "CST",
+  hk: "HKT",
+  jp: "JST",
+  kr: "KST",
+  sg: "SGT",
+  au: (o) => (o === 660 ? "AEDT" : "AEST"),
+}
+
+/** The zone abbreviation a desk would use for this market at time `t`, e.g. IST, EDT, AEDT */
+export function zoneLabel(market: Market, t: number | Date) {
+  const name = ZONE_NAMES[market.id]
+  if (typeof name === "string") return name
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: market.timeZone, timeZoneName: "longOffset" }).formatToParts(t)
+  const off = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT"
+  const m = off.match(/GMT([+-])(\d{2}):?(\d{2})?/)
+  const minutes = m ? (m[1] === "-" ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] ?? 0)) : 0
+  return name ? name(minutes) : off
+}

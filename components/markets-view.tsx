@@ -15,7 +15,7 @@ import { useNow } from "@/hooks/use-browser"
 import { fetchChart, fetchMovers, type Movers } from "@/lib/stock-data"
 import { displaySymbol, formatMoney, formatPercent, formatPrice, formatSigned, shortName } from "@/lib/format"
 import { indexMeta, indexesFor } from "@/lib/indices"
-import { getMarketStatus, sessionLabels, type Market } from "@/lib/markets"
+import { getMarketStatus, sessionLabels, zoneLabel, type Market } from "@/lib/markets"
 import {
   COMMODITIES,
   CRYPTO,
@@ -234,15 +234,9 @@ function MarketHeader({
   ]
 
   const asOf = mainQ?.asOf
-    ? new Date(mainQ.asOf).toLocaleString("en-US", {
-        timeZone: market.timeZone,
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        hour: "numeric",
-        minute: "2-digit",
-        timeZoneName: "short",
-      })
+    ? `${new Date(mainQ.asOf).toLocaleString("en-US", { timeZone: market.timeZone, hour: "numeric", minute: "2-digit" })} ${zoneLabel(market, mainQ.asOf)}, ${new Date(
+        mainQ.asOf,
+      ).toLocaleDateString("en-US", { timeZone: market.timeZone, weekday: "short", day: "numeric", month: "short" })}`
     : null
 
   const up = caps.filter((c) => c.quote.direction === "up").length
@@ -503,7 +497,6 @@ function MoversCard({
             <tr className="text-[12px] text-label-2">
               <th scope="col" className="pb-2 text-left font-semibold">Company</th>
               <th scope="col" className="pb-2 text-right font-semibold">Last</th>
-              <th scope="col" className="hidden pb-2 text-right font-semibold sm:table-cell">Value traded</th>
               <th scope="col" className="pb-2 text-right font-semibold">Change</th>
             </tr>
           </thead>
@@ -513,11 +506,13 @@ function MoversCard({
                 <td className="max-w-0 py-2.5 pr-3">
                   <Link href={symbolHref(s.symbol)} className="block rounded-[8px] outline-none focus-visible:ring-2 focus-visible:ring-tint/60">
                     <span className="block truncate font-semibold">{shortName(s.name)}</span>
-                    <span className="block truncate text-[12px] text-label-2">{displaySymbol(s.symbol)}</span>
+                    <span className="num block truncate text-[12px] text-label-2">
+                      {displaySymbol(s.symbol)}
+                      {s.volume ? ` · ${formatMoney(s.price * s.volume, s.currency, { compact: true })} traded` : ""}
+                    </span>
                   </Link>
                 </td>
                 <td className="num py-2.5 text-right">{formatMoney(s.price, s.currency)}</td>
-                <td className="num hidden py-2.5 text-right text-label-2 sm:table-cell">{s.volume ? formatMoney(s.price * s.volume, s.currency, { compact: true }) : "—"}</td>
                 <td className="py-2.5 pl-3 text-right">
                   <span
                     className={cn(

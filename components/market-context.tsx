@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import { DEFAULT_MARKET, MARKETS, marketById, type LiveSession, type Market } from "@/lib/markets"
 import { useNow, useStoredString, writeStored } from "@/hooks/use-browser"
 import { usePoll } from "@/hooks/use-poll"
+import { useFeed } from "./workspace"
 import { fetchQuotes } from "@/lib/stock-data"
 import type { Stock } from "@/lib/stock-types"
 
@@ -34,6 +35,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   const ready = saved !== undefined
   const market = marketById(saved ?? DEFAULT_MARKET) ?? MARKETS[0]
   const now = useNow()
+  const { report } = useFeed()
 
   const setMarket = useCallback((id: string) => {
     if (marketById(id)) writeStored(MARKET_KEY, id)
@@ -44,6 +46,8 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   usePoll(
     async () => {
       const result = await fetchQuotes(MARKETS.map((m) => m.probe))
+      // This feed runs on every page, so it keeps the toolbar's status current everywhere
+      report(result)
       if (!result) return false
       const byMarket: Record<string, Stock> = {}
       for (const m of MARKETS) {
