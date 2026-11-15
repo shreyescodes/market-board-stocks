@@ -9,7 +9,7 @@ import { useWorkspace } from "./workspace"
 import { useStoredString, writeStored } from "@/hooks/use-browser"
 import { fetchQuotes } from "@/lib/stock-data"
 import { exchangeName, marketForSymbol } from "@/lib/markets"
-import { formatMoney, formatPercent } from "@/lib/format"
+import { displaySymbol, formatMoney, formatPercent, shortName } from "@/lib/format"
 import type { Stock } from "@/lib/stock-types"
 import { cn } from "@/lib/utils"
 
@@ -158,9 +158,9 @@ export function SearchSheet({ open, onClose }: { open: boolean; onClose: () => v
               <button onClick={() => openResult(r)} className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-tint/60">
                 {showingRecent && <Clock className="h-4 w-4 shrink-0 text-label-2" aria-hidden />}
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-[15px] font-semibold">{r.name}</span>
+                  <span className="truncate text-[15px] font-semibold">{shortName(r.name)}</span>
                   <span className="truncate text-[12px] text-label-2">
-                    {r.symbol}
+                    {displaySymbol(r.symbol)}
                     {where ? ` · ${where}` : ""}
                   </span>
                 </span>
