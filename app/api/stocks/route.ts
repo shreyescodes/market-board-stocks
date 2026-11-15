@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server"
 import YahooFinanceClass from "yahoo-finance2"
+import { matchScore, prefixQueries, rankFuzzy } from "@/lib/fuzzy"
+import { INDEX_CATALOG } from "@/lib/indices"
+import { SEARCH_CATALOG } from "@/lib/search-catalog"
 
 const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] })
 const NO_VALIDATION = { validateResult: false } as const
@@ -235,6 +238,69 @@ async function getChart(symbol: string, timeframe: string): Promise<ChartData | 
   }
 }
 
+type SearchHit = { symbol: string; name: string; exchange: string; type: string }
+
+const SEARCH_TTL = 10 * 60_000
+const searchCache = new Map<string, { at: number; hits: SearchHit[] }>()
+
+/** Stocks, ETFs and indexes matching a query, in Yahoo's relevance order (cached: typing repeats queries) */
+async function searchYahoo(query: string, fuzzy = false): Promise<SearchHit[]> {
+  const key = `${fuzzy ? "~" : ""}${query.toLowerCase()}`
+  const cached = searchCache.get(key)
+  if (cached && Date.now() - cached.at < SEARCH_TTL) return cached.hits
+  const results = obj(await yahooFinance.search(query, fuzzy ? { enableFuzzyQuery: true } : {}, NO_VALIDATION))
+  const hits = list(results.quotes).flatMap((q) => {
+    const symbol = str(q.symbol)
+    const type = str(q.quoteType)
+    if (!symbol || (type !== "EQUITY" && type !== "ETF" && type !== "INDEX")) return []
+    return [{ symbol, name: str(q.longname) ?? str(q.shortname) ?? symbol, exchange: str(q.exchange) ?? "", type }]
+  })
+  if (searchCache.size > 500) searchCache.delete(searchCache.keys().next().value!)
+  searchCache.set(key, { at: Date.now(), hits })
+  return hits
+}
+
+// What we can match locally, instantly and with typos: the markets' indexes, then the large caps by name or alias
+const LOCAL_HITS: (SearchHit & { aliases?: string[] })[] = [
+  ...INDEX_CATALOG.map((i) => ({ symbol: i.symbol, name: i.name, exchange: "", type: "INDEX" })),
+  ...SEARCH_CATALOG.map(([symbol, name, aliases, etf]) => ({ symbol, name, exchange: "", type: etf ? "ETF" : "EQUITY", aliases })),
+]
+
+/**
+ * Search that forgives typos. Yahoo's search has no spelling correction, and a misspelt brand can't be found by
+ * spelling at all when the listing has another name ("gogle" → Alphabet). So:
+ *  1. Yahoo's results for the text as typed, led by local names that start with it ("google" → Alphabet first).
+ *  2. When nothing found starts with what was typed, it's probably a typo: score local names and aliases, Yahoo's
+ *     own fuzzy search and prefix searches against the query, keep those within a typo or two, closest first.
+ * `fuzzy` tells the client the best match needed a correction, so it can say so.
+ */
+async function searchWithTypos(query: string) {
+  const compact = query.replace(/\s/g, "").length
+  const score = (h: SearchHit) => matchScore(query, h)
+  const dedupe = (hits: SearchHit[]) =>
+    hits.filter((h, i) => hits.findIndex((x) => x.symbol === h.symbol) === i).map(({ symbol, name, exchange, type }) => ({ symbol, name, exchange, type }))
+
+  const direct = await searchYahoo(query)
+  const local = compact >= 2 ? rankFuzzy(query, LOCAL_HITS) : []
+  // A whole word, ticker or alias typed exactly leads ("sbi", "zomato"); a name that only starts with it fills in
+  // after Yahoo's hits ("appl" is Apple before Gree Electric Appliances)
+  const whole = local.filter((h) => score(h) === 0).slice(0, 3)
+  const starts = local.filter((h) => score(h)! > 0 && score(h)! < 1).slice(0, 3)
+  // An index one typo away still leads when the word is long enough to be sure ("nasdq" → Nasdaq)
+  const indexes = compact >= 5 ? local.filter((h) => h.type === "INDEX" && score(h)! < 2).slice(0, 2) : []
+  const exact = whole.length + starts.length > 0 || direct.some((d) => (score(d) ?? 9) < 1)
+  if (exact || compact < 4) {
+    return { results: dedupe([...indexes, ...whole, ...direct, ...starts]).slice(0, 8), fuzzy: indexes.some((h) => score(h)! >= 1) }
+  }
+
+  const widened = await Promise.all([searchYahoo(query, true), ...prefixQueries(query).map((q) => searchYahoo(q))].map((p) => p.catch(() => [])))
+  // Local names first so a tie goes to the company people mean rather than a leveraged ETF on it
+  const close = rankFuzzy(query, [...local, ...direct, ...widened.flat()])
+  const best = close[0] ? score(close[0]) : null
+  // Yahoo's own hits still follow: a right answer can look nothing like the query ("facebook" → Meta Platforms)
+  return { results: dedupe([...close, ...direct]).slice(0, 8), fuzzy: best !== null && best >= 1 }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -295,19 +361,10 @@ export async function GET(request: Request) {
     }
 
     if (action === "search") {
-      const query = searchParams.get("query")
+      const query = searchParams.get("query")?.trim()
       if (!query) return NextResponse.json({ error: "Missing query parameter" }, { status: 400 })
       try {
-        const results = obj(await yahooFinance.search(query, {}, NO_VALIDATION))
-        const mappedResults = list(results.quotes)
-          .flatMap((q) => {
-            const symbol = str(q.symbol)
-            const type = str(q.quoteType)
-            if (!symbol || (type !== "EQUITY" && type !== "ETF" && type !== "INDEX")) return []
-            return [{ symbol, name: str(q.longname) ?? str(q.shortname) ?? symbol, exchange: str(q.exchange) ?? "", type }]
-          })
-          .slice(0, 8)
-        return NextResponse.json({ results: mappedResults })
+        return NextResponse.json(await searchWithTypos(query))
       } catch (e) {
         console.warn(`Ticker search failed for ${query}:`, (e as Error).message)
         return NextResponse.json({ error: "Search failed", results: [] }, { status: 503 })

@@ -165,9 +165,9 @@ export function StockDetails({ stock }: StockDetailsProps) {
       : null
 
   return (
-    <div className="flex flex-col">
+    <div className="@container flex flex-col">
       {/* Header */}
-      <div className="flex flex-col gap-4 px-1 pt-7 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 px-1 pt-7 @xl:flex-row @xl:items-end @xl:justify-between">
         <div className="flex min-w-0 flex-col">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
@@ -196,7 +196,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
           </AnimatePresence>
         </div>
 
-        <div className="flex flex-col sm:items-end">
+        <div className="flex flex-col @xl:items-end">
           <NumericText value={shownPrice} format={(n) => formatPrice(n, stock.currency)} className="display text-[38px] font-semibold leading-none text-foreground" />
           <div className="mt-2.5 flex items-center gap-2">
             <ChangePill direction={shownDir}>{formatSigned(shownChange)}</ChangePill>
@@ -233,8 +233,8 @@ export function StockDetails({ stock }: StockDetailsProps) {
       </div>
 
       {/* Range control */}
-      <div className="flex flex-col gap-3 px-1 pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="fill relative flex w-full rounded-full p-[3px] sm:w-auto" role="tablist" aria-label="Chart range">
+      <div className="flex flex-col gap-3 px-1 pt-6 @xl:flex-row @xl:items-center @xl:justify-between">
+        <div className="fill relative flex w-full rounded-full p-[3px] @xl:w-auto" role="tablist" aria-label="Chart range">
           {TIMEFRAMES.map((tf, index) => {
             const active = timeframe === tf
             return (
@@ -250,7 +250,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
                 onKeyDown={(e) => onTabKey(e, index)}
                 onClick={() => setTimeframe(tf)}
                 className={cn(
-                  "press relative h-[30px] flex-1 rounded-full px-4 text-[13px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-tint/60 sm:flex-none",
+                  "press relative h-9 flex-1 rounded-full px-4 @xl:h-[30px] text-[13px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-tint/60 @xl:flex-none",
                   active ? "text-foreground" : "text-label-2 hover:text-foreground",
                 )}
               >
@@ -269,7 +269,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
       </div>
 
       {/* Chart */}
-      <div className="relative mt-4 h-[300px] w-full sm:h-[360px]">
+      <div className="relative mt-4 h-[300px] w-full @xl:h-[360px]">
         <AnimatePresence>
           {status === "loading" && (
             <motion.div
@@ -393,7 +393,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
       </div>
 
       {/* Fundamentals */}
-      <div className="mt-4 grid grid-cols-2 gap-x-6 rounded-[22px] bg-surface px-5 py-2 sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-x-6 rounded-[22px] bg-surface px-5 py-2 @xl:grid-cols-4">
         <Stat label="Open" value={formatPrice(stock.open)} />
         <Stat label="Volume" value={formatCompact(stock.volume, stock.currency)} />
         <Stat label="52W High" value={formatPrice(stock.fiftyTwoWHigh)} />
@@ -413,7 +413,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between border-b border-separator py-3 [&:nth-last-child(-n+2)]:border-b-0 sm:[&:nth-last-child(-n+4)]:border-b-0">
+    <div className="flex items-center justify-between border-b border-separator py-3 [&:nth-last-child(-n+2)]:border-b-0 @xl:[&:nth-last-child(-n+4)]:border-b-0">
       <span className="text-[13px] text-label-2">{label}</span>
       <span className="num text-[13px] font-semibold text-foreground">{value}</span>
     </div>

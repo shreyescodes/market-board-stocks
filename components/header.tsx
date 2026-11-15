@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { ChevronDown, Moon, Search, Sun } from "lucide-react"
 import { useRefraction } from "./liquid-glass"
 import { useMarket } from "./market-context"
+import { Flag } from "./flag"
 import { formatAge } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -100,9 +101,7 @@ function CountryButton({ onClick, compact }: { onClick: () => void; compact?: bo
         compact ? "h-10 px-3 text-[15px]" : "h-9 px-3.5 text-[14px]",
       )}
     >
-      <span className="rounded-[4px] bg-tint-fill px-1 py-px text-[10px] font-bold uppercase text-white" aria-hidden>
-        {market.id === "uk" ? "GB" : market.id}
-      </span>
+      <Flag market={market.id} />
       <span className="max-w-[140px] truncate">{market.name}</span>
       <ChevronDown className="h-3.5 w-3.5 text-label-2" strokeWidth={2.5} aria-hidden />
     </button>

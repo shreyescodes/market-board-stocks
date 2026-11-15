@@ -80,7 +80,7 @@ export function SymbolView({ symbol }: { symbol: string }) {
               <Link
                 href="/"
                 onClick={() => setMarket(home.id)}
-                className="truncate rounded-[6px] font-semibold text-tint outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
+                className="-my-2 truncate rounded-[6px] py-2 font-semibold text-tint outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
               >
                 {home.name}
               </Link>
@@ -148,7 +148,7 @@ export function SymbolView({ symbol }: { symbol: string }) {
                   href={`/symbol/${encodeURIComponent(p)}`}
                   className="press flex flex-col gap-1 rounded-[16px] bg-surface-2 p-3.5 outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
                 >
-                  <span className="truncate text-[15px] font-semibold">{q ? shortName(q.name) : displaySymbol(p)}</span>
+                  <span className="line-clamp-2 text-[15px] font-semibold leading-tight">{q ? shortName(q.name) : displaySymbol(p)}</span>
                   <span className="text-[12px] text-label-2">{displaySymbol(p)}</span>
                   <span className="num mt-1.5 flex justify-between text-[14px]">
                     <span>{q ? formatMoney(q.price, q.currency) : "…"}</span>

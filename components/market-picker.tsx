@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { Check } from "lucide-react"
 import { Sheet, SheetSearch } from "./sheet"
 import { useMarket } from "./market-context"
+import { Flag } from "./flag"
 import { useNow } from "@/hooks/use-browser"
 import { MARKETS, getMarketStatus } from "@/lib/markets"
 import { cn } from "@/lib/utils"
@@ -64,7 +65,8 @@ export function MarketPicker({ open, onClose }: { open: boolean; onClose: () => 
                     isCurrent && "bg-selection",
                   )}
                 >
-                  <div className="flex min-w-0 flex-col">
+                  <Flag market={market.id} className="h-[18px] w-[27px]" />
+                  <div className="flex min-w-0 flex-1 flex-col">
                     <span className="flex items-center gap-1.5 text-[15px] font-medium">
                       {market.name}
                       {isCurrent && <Check className="h-4 w-4 text-tint" strokeWidth={2.5} aria-label="current" />}

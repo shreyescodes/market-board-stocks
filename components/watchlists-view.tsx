@@ -80,17 +80,19 @@ export function WatchlistsView() {
   return (
     <div className="flex flex-col gap-5 pb-4">
       <PageTitle title="Watchlists" />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)] xl:grid-cols-[220px_minmax(340px,400px)_minmax(0,1fr)]">
+      {/* Desktop: a fixed-height workspace like Mail or Stocks; lists, list and detail each scroll on their own, so nothing
+          slides under the toolbar. Phones scroll as one page. */}
+      <div className="grid grid-cols-1 gap-4 lg:h-[calc(100dvh-168px)] lg:min-h-[560px] lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] xl:grid-cols-[220px_minmax(340px,400px)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)]">
         <ListsPanel
           lists={lists}
           activeId={activeWatchlist?.id}
           quotes={quotes}
           onSelect={setActiveWatchlist}
           onManage={() => setManaging(true)}
-          className="lg:col-span-2 xl:col-span-1"
+          className="lg:col-span-2 xl:col-span-1 xl:min-h-0 xl:overflow-y-auto"
         />
 
-        <aside className="lg:sticky lg:top-[76px] lg:h-[calc(100vh-92px)] lg:self-start">
+        <aside className="lg:h-full lg:min-h-0">
           <WatchlistTable
             rows={rows}
             loaded={ready}
@@ -103,7 +105,7 @@ export function WatchlistsView() {
           />
         </aside>
 
-        <section ref={detailRef} className="min-w-0 scroll-mt-[76px]">
+        <section ref={detailRef} className="min-w-0 scroll-mt-[76px] lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:rounded-[22px]">
           {selectedStock ? (
             <div className="flex flex-col gap-2">
               <div className="flex justify-end">
@@ -159,13 +161,13 @@ function ListsPanel({
     return { up: qs.filter((q) => q.direction === "up").length, down: qs.filter((q) => q.direction === "down").length, known: qs.length }
   }
   return (
-    <nav aria-label="Your lists" className={cn("flex min-w-0 flex-col gap-2 rounded-[22px] bg-surface p-2.5 xl:self-start", className)}>
+    <nav aria-label="Your lists" className={cn("flex min-w-0 flex-col gap-2 rounded-[22px] bg-surface p-2.5", className)}>
       <div className="flex items-center justify-between px-2.5 pt-1.5">
         <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-label-2">Your lists</span>
         <button
           onClick={onManage}
           aria-label="Rename or delete lists"
-          className="press flex h-7 w-7 items-center justify-center rounded-full text-label-2 outline-none hover:bg-fill hover:text-foreground focus-visible:ring-2 focus-visible:ring-tint/60"
+          className="press flex h-9 w-9 items-center justify-center rounded-full text-label-2 md:h-7 md:w-7 outline-none hover:bg-fill hover:text-foreground focus-visible:ring-2 focus-visible:ring-tint/60"
         >
           <Settings2 className="h-4 w-4" aria-hidden />
         </button>

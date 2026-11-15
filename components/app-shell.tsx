@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <MarketProvider>
           <div className={theme === "dark" ? "dark" : ""}>
             <Toaster position="top-center" theme={theme} offset={80} toastOptions={{ className: "liquid-toast" }} />
-            <div className="min-h-screen bg-background pb-28 text-foreground md:pb-6">
+            <div className="min-h-screen bg-background pb-28 text-foreground md:pb-3">
               <ShellChrome theme={theme} onToggleTheme={toggleTheme}>
                 {children}
               </ShellChrome>

@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react"
 import { useMarket } from "./market-context"
 import { PageTitle } from "./markets-view"
 import { Sparkline } from "./sparkline"
+import { Flag } from "./flag"
 import { useNow } from "@/hooks/use-browser"
 import { useSparks } from "@/hooks/use-sparks"
 import { MARKETS, getMarketStatus, secondsUntilOpen } from "@/lib/markets"
@@ -15,7 +16,6 @@ import { formatPercent, formatPrice } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 const REGIONS = ["Americas", "Europe", "Middle East & Africa", "Asia-Pacific"] as const
-const code = (id: string) => (id === "uk" ? "GB" : id.toUpperCase())
 
 /* Every market at a glance: session, local time, main index and its day. Pick one to make it your lens. */
 export function WorldView() {
@@ -69,7 +69,7 @@ export function WorldView() {
         </div>
         <div className={tile}>
           <span className={tileLabel}>Next to open</span>
-          <span className="display truncate text-[21px] font-bold">{next?.m.name ?? "—"}</span>
+          <span className="display text-[21px] font-bold leading-tight">{next?.m.name ?? "—"}</span>
           <span className="num truncate text-[12px] text-label-2">{next ? `${next.status.detail} · ${next.m.exchange}` : ""}</span>
         </div>
         <div className={tile}>
@@ -82,7 +82,7 @@ export function WorldView() {
         </div>
         <div className={tile}>
           <span className={tileLabel}>Biggest move</span>
-          <span className="display truncate text-[21px] font-bold">
+          <span className="display text-[21px] font-bold leading-tight">
             {biggest ? (
               <>
                 {biggest.m.name} <span className={biggest.q!.direction === "down" ? "text-down" : "text-up"}>{formatPercent(biggest.q!.changePercent)}</span>
@@ -95,7 +95,7 @@ export function WorldView() {
         </div>
       </div>
 
-      <section aria-label="All markets" className="overflow-x-auto rounded-[22px] bg-surface px-3 pb-3 pt-1">
+      <section aria-label="All markets" className="relative overflow-x-auto rounded-[22px] bg-surface px-3 pb-3 pt-1">
         <table className="w-full min-w-[860px] border-collapse text-[14px]">
           <thead>
             <tr className="text-[12px] text-label-2">
@@ -139,12 +139,7 @@ export function WorldView() {
                           className="flex items-center gap-2.5 rounded-[8px] text-left outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
                           aria-label={`Make ${m.name} your market`}
                         >
-                          <span
-                            className={cn("w-7 shrink-0 rounded-[5px] py-px text-center text-[10px] font-bold", isCurrent ? "bg-tint-fill text-white" : "bg-fill text-label-2")}
-                            aria-hidden
-                          >
-                            {code(m.id)}
-                          </span>
+                          <Flag market={m.id} className="h-[16px] w-[24px]" />
                           <span className="flex flex-col">
                             <span className="font-semibold">{m.name}</span>
                             <span className="text-[12px] text-label-2">{isCurrent ? `${m.exchange} · your market` : m.exchange}</span>
