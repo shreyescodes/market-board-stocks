@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import YahooFinanceClass from "yahoo-finance2"
+import { matchScore, prefixQueries, rankFuzzy } from "@/lib/fuzzy"
+import { INDEX_CATALOG } from "@/lib/indices"
 
 const yahooFinance = new YahooFinanceClass({ suppressNotices: ["yahooSurvey"] })
 const NO_VALIDATION = { validateResult: false } as const
@@ -235,6 +237,53 @@ async function getChart(symbol: string, timeframe: string): Promise<ChartData | 
   }
 }
 
+type SearchHit = { symbol: string; name: string; exchange: string; type: string }
+
+const SEARCH_TTL = 10 * 60_000
+const searchCache = new Map<string, { at: number; hits: SearchHit[] }>()
+
+/** Stocks, ETFs and indexes matching a query, in Yahoo's relevance order (cached: typing repeats queries) */
+async function searchYahoo(query: string): Promise<SearchHit[]> {
+  const key = query.toLowerCase()
+  const cached = searchCache.get(key)
+  if (cached && Date.now() - cached.at < SEARCH_TTL) return cached.hits
+  const results = obj(await yahooFinance.search(query, {}, NO_VALIDATION))
+  const hits = list(results.quotes).flatMap((q) => {
+    const symbol = str(q.symbol)
+    const type = str(q.quoteType)
+    if (!symbol || (type !== "EQUITY" && type !== "ETF" && type !== "INDEX")) return []
+    return [{ symbol, name: str(q.longname) ?? str(q.shortname) ?? symbol, exchange: str(q.exchange) ?? "", type }]
+  })
+  if (searchCache.size > 500) searchCache.delete(searchCache.keys().next().value!)
+  searchCache.set(key, { at: Date.now(), hits })
+  return hits
+}
+
+const CATALOG_HITS: SearchHit[] = INDEX_CATALOG.map((i) => ({ symbol: i.symbol, name: i.name, exchange: "", type: "INDEX" }))
+
+/**
+ * Yahoo's search has no spelling correction ("appel", "relaince", "nvidea" find nothing). When fewer than three
+ * of its hits resemble the query, search on the starts of the words too and keep what is within a typo or two.
+ * `fuzzy` tells the client the best match needed a correction, so it can say so.
+ */
+async function searchWithTypos(query: string) {
+  const direct = await searchYahoo(query)
+  // The markets' own indexes, by the names people use for them ("sensex", "nasdaq"), lead when they match
+  // Short words only on an exact start ("sens" is Sensex, not Hang Seng), longer ones forgive a typo ("nasdq")
+  const compact = query.replace(/\s/g, "").length
+  const indexes = compact >= 3 ? rankFuzzy(query, CATALOG_HITS).filter((h) => compact >= 5 || matchScore(query, h)! < 1).slice(0, 2) : []
+  const dedupe = (hits: SearchHit[]) => hits.filter((h, i) => hits.findIndex((x) => x.symbol === h.symbol) === i)
+  const resembling = direct.filter((d) => matchScore(query, d) !== null)
+  if (resembling.length >= 3 || compact < 4) {
+    return { results: dedupe([...indexes, ...direct]).slice(0, 8), fuzzy: !!indexes[0] && matchScore(query, indexes[0])! >= 1 }
+  }
+  const widened = await Promise.all(prefixQueries(query).map((q) => searchYahoo(q).catch(() => [])))
+  const close = rankFuzzy(query, [...indexes, ...direct, ...widened.flat()])
+  const best = close[0] ? matchScore(query, close[0]) : null
+  // Yahoo's own hits still follow: a right answer can look nothing like the query ("facebook" → Meta Platforms)
+  return { results: dedupe([...close, ...direct]).slice(0, 8), fuzzy: best !== null && best >= 1 }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -295,19 +344,10 @@ export async function GET(request: Request) {
     }
 
     if (action === "search") {
-      const query = searchParams.get("query")
+      const query = searchParams.get("query")?.trim()
       if (!query) return NextResponse.json({ error: "Missing query parameter" }, { status: 400 })
       try {
-        const results = obj(await yahooFinance.search(query, {}, NO_VALIDATION))
-        const mappedResults = list(results.quotes)
-          .flatMap((q) => {
-            const symbol = str(q.symbol)
-            const type = str(q.quoteType)
-            if (!symbol || (type !== "EQUITY" && type !== "ETF" && type !== "INDEX")) return []
-            return [{ symbol, name: str(q.longname) ?? str(q.shortname) ?? symbol, exchange: str(q.exchange) ?? "", type }]
-          })
-          .slice(0, 8)
-        return NextResponse.json({ results: mappedResults })
+        return NextResponse.json(await searchWithTypos(query))
       } catch (e) {
         console.warn(`Ticker search failed for ${query}:`, (e as Error).message)
         return NextResponse.json({ error: "Search failed", results: [] }, { status: 503 })
