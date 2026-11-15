@@ -1,8 +1,8 @@
 /*
- * Portfolio valuation in a single base currency (USD).
+ * Portfolio valuation in one base currency: the selected market's (INR for India), or USD.
  *
  * - Prices quoted in minor units (GBp pence, ILA agorot, ZAc cents) are converted to major units.
- * - Each currency is converted with Yahoo's live <CUR>USD=X rate. Day P&L uses the previous close
+ * - Each currency is converted with Yahoo's live <CUR><BASE>=X rate. Day P&L uses the previous close
  *   of both the price and the FX rate, so it includes currency moves.
  * - Cost basis is converted at today's FX rate (no historical FX), which the UI states.
  * - A position without a quote or FX rate is left out of the totals and flagged — never estimated.
@@ -26,15 +26,15 @@ export function majorCurrency(currency?: string | null) {
   return minor ? { code: minor.major, div: minor.div } : { code: cur.toUpperCase(), div: 1 }
 }
 
-/** Yahoo symbol giving the USD value of one unit of `code` */
-export const fxSymbol = (code: string) => (code === BASE_CURRENCY ? null : `${code}${BASE_CURRENCY}=X`)
+/** Yahoo symbol giving the `base` value of one unit of `code` */
+export const fxSymbol = (code: string, base = BASE_CURRENCY) => (code === base ? null : `${code}${base}=X`)
 
 export type HoldingRow = {
   position: Position
   quote?: Stock
   currency: string // quote currency as Yahoo reports it (may be a minor unit)
   baseCode: string // major currency code
-  value?: number // USD
+  value?: number // in the base currency
   dayPnl?: number
   dayPct?: number
   costBasis?: number
@@ -56,7 +56,7 @@ export type PortfolioSummary = {
   asOf: number | null
 }
 
-export function valuePortfolio(positions: Position[], quotes: Record<string, Stock>): PortfolioSummary {
+export function valuePortfolio(positions: Position[], quotes: Record<string, Stock>, base = BASE_CURRENCY): PortfolioSummary {
   let value = 0
   let prevValue = 0
   let costBasis = 0
@@ -70,9 +70,9 @@ export function valuePortfolio(positions: Position[], quotes: Record<string, Sto
       return { position, currency: "—", baseCode: "—", issue: "no-quote" }
     }
     const { code, div } = majorCurrency(quote.currency)
-    const fx = code === BASE_CURRENCY ? quote : quotes[fxSymbol(code)!]
-    const rate = code === BASE_CURRENCY ? 1 : fx?.price
-    const ratePrev = code === BASE_CURRENCY ? 1 : fx?.prevClose || fx?.price
+    const fx = code === base ? quote : quotes[fxSymbol(code, base)!]
+    const rate = code === base ? 1 : fx?.price
+    const ratePrev = code === base ? 1 : fx?.prevClose || fx?.price
     if (!rate || !ratePrev) {
       excluded++
       return { position, quote, currency: quote.currency ?? "", baseCode: code, issue: "no-fx" }

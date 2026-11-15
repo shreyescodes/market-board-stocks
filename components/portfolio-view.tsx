@@ -2,21 +2,24 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { Download, Pencil, Plus, Upload, X } from "lucide-react"
+import { Download, Ellipsis, Pencil, Plus, Upload, X } from "lucide-react"
 import { toast } from "sonner"
 import { PageTitle } from "./markets-view"
 import { PositionSheet, type PositionDraft } from "./position-sheet"
 import { Sheet } from "./sheet"
 import { useWorkspace } from "./workspace"
+import { useMarket } from "./market-context"
+import { Segmented } from "./segmented"
+import { profileFor } from "@/lib/market-profiles"
+import { exchangeName } from "@/lib/markets"
 import { useQuotes } from "@/hooks/use-quotes"
 import { allocation, fxSymbol, majorCurrency, valuePortfolio, type HoldingRow } from "@/lib/portfolio"
 import { fetchProfiles, type Profile } from "@/lib/stock-data"
 import { fromBackup, toBackup, type Workspace } from "@/lib/storage"
-import { formatMoney, formatPercent, formatPrice, formatTimeIn } from "@/lib/format"
+import { displaySymbol, formatMoney, formatPercent, formatSignedMoney, formatTimeIn, shortName } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-const usd = (n?: number | null) => formatMoney(n, "USD")
-const signedUsd = (n?: number | null) => (n == null ? "—" : `${n > 0 ? "+" : n < 0 ? "−" : ""}${formatMoney(Math.abs(n), "USD")}`)
+const ALLOC_COLORS = ["var(--tint)", "#af52de", "#32ade6", "#ff9f0a", "#30b0c7", "#a2845e"]
 const tone = (n?: number | null) => (n == null || Math.abs(n) < 0.005 ? "text-label-2" : n > 0 ? "text-up" : "text-down")
 
 export function PortfolioView() {
@@ -25,6 +28,16 @@ export function PortfolioView() {
   const [draft, setDraft] = useState<PositionDraft | null>(null)
   const [importing, setImporting] = useState<Workspace | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [tab, setTab] = useState<"holdings" | "allocation">("holdings")
+
+  // Totals follow the market lens (INR for India), with USD one tap away
+  const { market } = useMarket()
+  const local = profileFor(market.id).currency
+  const [inUsd, setInUsd] = useState(false)
+  const base = inUsd || local === "USD" ? "USD" : local
+  const usd = (n?: number | null) => formatMoney(n, base)
+  const signedUsd = (n?: number | null) => formatSignedMoney(n, base)
 
   // Quotes for holdings, plus FX rates for every non-USD currency they trade in
   const holdingSymbols = useMemo(() => [...new Set(positions.map((p) => p.symbol))], [positions])
@@ -33,11 +46,12 @@ export function PortfolioView() {
     enabled: ready,
     related: (latest) => {
       const codes = new Set(holdingSymbols.map((s) => latest[s]).filter(Boolean).map((q) => majorCurrency(q!.currency).code))
-      return [...codes].map(fxSymbol).filter((s): s is string => !!s)
+      return [...codes].map((c) => fxSymbol(c, base)).filter((s): s is string => !!s)
     },
   })
 
-  const summary = useMemo(() => valuePortfolio(positions, quotes), [positions, quotes])
+  // Cheap enough to compute each render, and it follows the base currency switch
+  const summary = valuePortfolio(positions, quotes, base)
 
   // Sector/country profiles change rarely; fetch once per set of holdings
   const [profiles, setProfiles] = useState<Record<string, Profile>>({})
@@ -92,21 +106,46 @@ export function PortfolioView() {
     }
   }
 
-  const actionBtn = "press fill flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold hover:bg-fill-hover"
 
   return (
     <div className="flex flex-col gap-6 pb-4">
       <PageTitle
         title="Portfolio"
-        subtitle="Values in USD at live exchange rates"
+        subtitle={`Values in ${base} at live exchange rates`}
         actions={
           <>
-            <button onClick={exportBackup} className={actionBtn} disabled={!workspace}>
-              <Download className="h-4 w-4" aria-hidden /> Export
-            </button>
-            <button onClick={() => fileRef.current?.click()} className={actionBtn}>
-              <Upload className="h-4 w-4" aria-hidden /> Import
-            </button>
+            {local !== "USD" && (
+              <Segmented
+                label="Show values in"
+                size="sm"
+                value={inUsd ? "USD" : local}
+                onChange={(v) => setInUsd(v === "USD")}
+                options={[
+                  { value: local, label: local },
+                  { value: "USD", label: "USD" },
+                ]}
+              />
+            )}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-expanded={menuOpen}
+                aria-label="More: export or import a backup"
+                className="press fill flex h-9 w-9 items-center justify-center rounded-full outline-none hover:bg-fill-hover focus-visible:ring-2 focus-visible:ring-tint/60"
+              >
+                <Ellipsis className="h-4 w-4" aria-hidden />
+              </button>
+              {menuOpen && (
+                <div className="glass glass-solid absolute right-0 top-11 z-30 flex w-[200px] flex-col rounded-[18px] p-1.5" role="menu">
+                  <button role="menuitem" onClick={() => { setMenuOpen(false); exportBackup() }} className="flex items-center gap-2 rounded-[12px] px-3 py-2 text-left text-[14px] hover:bg-selection" disabled={!workspace}>
+                    <Download className="h-4 w-4" aria-hidden /> Export backup
+                  </button>
+                  <button role="menuitem" onClick={() => { setMenuOpen(false); fileRef.current?.click() }} className="flex items-center gap-2 rounded-[12px] px-3 py-2 text-left text-[14px] hover:bg-selection">
+                    <Upload className="h-4 w-4" aria-hidden /> Import backup
+                  </button>
+                </div>
+              )}
+            </div>
             <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => onFile(e.target.files?.[0])} />
             <button
               onClick={() => setDraft({})}
@@ -122,7 +161,7 @@ export function PortfolioView() {
         <div className="flex flex-col items-center gap-2 rounded-[22px] bg-surface px-6 py-16 text-center">
           <h2 className="text-[20px] font-semibold">Track your holdings</h2>
           <p className="max-w-[420px] text-[14px] text-label-2">
-            Add the stocks and funds you own to see their value, today&apos;s gain or loss, total return and allocation, all in USD.
+            Add the stocks and funds you own to see their value, today&apos;s gain or loss, total return and allocation, all in your market&apos;s currency.
           </p>
           <button
             onClick={() => setDraft({})}
@@ -133,22 +172,47 @@ export function PortfolioView() {
         </div>
       ) : (
         <>
-          {/* Summary */}
-          <section aria-label="Portfolio summary" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatTile label="Market Value" value={usd(summary.value)} />
-            <StatTile
-              label="Day's P&L"
-              value={signedUsd(summary.dayPnl)}
-              sub={formatPercent(summary.dayPct)}
-              toneClass={tone(summary.dayPnl)}
-            />
-            <StatTile
-              label="Total P&L"
-              value={signedUsd(summary.totalPnl)}
-              sub={formatPercent(summary.totalPct)}
-              toneClass={tone(summary.totalPnl)}
-            />
-            <StatTile label="Cost Basis" value={usd(summary.costBasis)} sub={`${valued.length} of ${positions.length} holdings valued`} />
+          {/* Summary: three numbers, then where the money is */}
+          <section aria-label="Portfolio summary" className="flex flex-col gap-5 rounded-[24px] bg-surface p-5 md:p-6">
+            <div className="flex flex-wrap gap-x-8 gap-y-4">
+              <div className="flex min-w-[220px] flex-[1.4] flex-col gap-0.5">
+                <span className="text-[13px] font-semibold text-label-2">Value</span>
+                <span className="num display text-[36px] font-bold leading-tight">{usd(summary.value)}</span>
+                <span className="text-[12px] text-label-2">
+                  {valued.length} of {positions.length} holdings valued
+                </span>
+              </div>
+              <div className="flex min-w-[150px] flex-1 flex-col gap-0.5 border-separator md:border-l md:pl-6">
+                <span className="text-[13px] font-semibold text-label-2">Today</span>
+                <span className={cn("num text-[24px] font-bold", tone(summary.dayPnl))}>{signedUsd(summary.dayPnl)}</span>
+                <span className={cn("num text-[14px] font-semibold", tone(summary.dayPnl))}>{formatPercent(summary.dayPct)}</span>
+              </div>
+              <div className="flex min-w-[150px] flex-1 flex-col gap-0.5 border-separator md:border-l md:pl-6">
+                <span className="text-[13px] font-semibold text-label-2">Total return</span>
+                <span className={cn("num text-[24px] font-bold", tone(summary.totalPnl))}>{signedUsd(summary.totalPnl)}</span>
+                <span className="num text-[14px] text-label-2">
+                  <span className={cn("font-semibold", tone(summary.totalPnl))}>{formatPercent(summary.totalPct)}</span> on {usd(summary.costBasis)} cost
+                </span>
+              </div>
+            </div>
+            {byHolding.length > 0 && (
+              <div className="flex flex-col gap-2.5 border-t border-separator pt-4">
+                <div role="img" aria-label={`Allocation: ${byHolding.map((h) => `${h.label} ${h.pct.toFixed(1)}%`).join(", ")}`} className="flex h-2.5 gap-[3px]">
+                  {byHolding.map((h, i) => (
+                    <span key={h.label} className="rounded-full" style={{ flex: h.pct, background: ALLOC_COLORS[i % ALLOC_COLORS.length] }} />
+                  ))}
+                </div>
+                <div className="num flex flex-wrap gap-x-4 gap-y-1 text-[13px]">
+                  {byHolding.map((h, i) => (
+                    <span key={h.label} className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ background: ALLOC_COLORS[i % ALLOC_COLORS.length] }} aria-hidden />
+                      {displaySymbol(h.label)} {h.pct.toFixed(1)}%
+                    </span>
+                  ))}
+                  <span className="text-label-2 md:ml-auto">Currency exposure: {byCurrency.map((c) => `${c.label} ${c.pct.toFixed(1)}%`).join(" · ")}</span>
+                </div>
+              </div>
+            )}
           </section>
 
           {summary.excluded > 0 && (
@@ -156,33 +220,42 @@ export function PortfolioView() {
               <span className="font-semibold text-warn">Not in totals: </span>
               {summary.rows
                 .filter((r) => r.issue)
-                .map((r) => `${r.position.symbol} (${r.issue === "no-quote" ? "no quote yet" : `no ${r.baseCode}→USD rate`})`)
+                .map((r) => `${r.position.symbol} (${r.issue === "no-quote" ? "no quote yet" : `no ${r.baseCode}→${base} rate`})`)
                 .join(", ")}
               . MarketBoard never estimates missing prices.
             </p>
           )}
 
+          <div className="flex items-center justify-between gap-2 px-1">
+            <Segmented
+              label="Portfolio view"
+              value={tab}
+              onChange={setTab}
+              options={[
+                { value: "holdings", label: "Holdings" },
+                { value: "allocation", label: "Allocation" },
+              ]}
+            />
+            <span className="num text-[12px] text-label-2">{summary.asOf ? `Latest price ${formatTimeIn(summary.asOf, null)}, your time` : ""}</span>
+          </div>
+
           {/* Holdings */}
+          {tab === "holdings" && (
           <section aria-labelledby="holdings" className="rounded-[22px] bg-surface p-4">
-            <div className="flex items-baseline justify-between gap-2 px-1 pb-2">
-              <h2 id="holdings" className="text-[17px] font-semibold">
-                Holdings
-              </h2>
-              <span className="num text-[12px] text-label-2">
-                {summary.asOf ? `Latest price ${formatTimeIn(summary.asOf, null)}, your time` : ""}
-              </span>
-            </div>
+            <h2 id="holdings" className="sr-only">
+              Holdings
+            </h2>
 
             {/* Table on wide screens */}
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[820px] text-[14px]">
                 <thead>
                   <tr className="border-b border-separator text-left text-[12px] text-label-2">
-                    <th className="px-2 py-2 font-medium">Symbol</th>
+                    <th className="px-2 py-2 font-medium">Holding</th>
                     <th className="px-2 py-2 text-right font-medium">Shares</th>
                     <th className="px-2 py-2 text-right font-medium">Avg Cost</th>
                     <th className="px-2 py-2 text-right font-medium">Price</th>
-                    <th className="px-2 py-2 text-right font-medium">Market Value</th>
+                    <th className="px-2 py-2 text-right font-medium">Value ({base})</th>
                     <th className="px-2 py-2 text-right font-medium">Day&apos;s P&amp;L</th>
                     <th className="px-2 py-2 text-right font-medium">Total P&amp;L</th>
                     <th className="px-2 py-2 text-right font-medium">Weight</th>
@@ -196,15 +269,18 @@ export function PortfolioView() {
                     <tr key={r.position.id} className="group border-b border-separator last:border-b-0">
                       <td className="px-2 py-2.5">
                         <Link href={`/symbol/${encodeURIComponent(r.position.symbol)}`} className="flex flex-col leading-tight hover:underline">
-                          <span className="font-semibold">{r.position.symbol}</span>
-                          <span className="max-w-[200px] truncate text-[12px] text-label-2">{r.quote?.name ?? "—"}</span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="max-w-[220px] truncate font-semibold">{r.quote ? shortName(r.quote.name) : r.position.symbol}</span>
+                            {r.quote?.exchange && <span className="rounded-[4px] bg-fill px-1 py-px text-[9px] font-bold uppercase text-label-2">{exchangeName(r.quote.exchange)}</span>}
+                          </span>
+                          <span className="text-[12px] text-label-2">{displaySymbol(r.position.symbol)}</span>
                         </Link>
                       </td>
                       <td className="num px-2 py-2.5 text-right">{r.position.shares.toLocaleString("en-US", { maximumFractionDigits: 6 })}</td>
                       <td className="num px-2 py-2.5 text-right">
-                        {formatPrice(r.position.cost)} <span className="text-[11px] text-label-2">{r.currency !== "—" ? r.currency : ""}</span>
+                        {r.quote ? formatMoney(r.position.cost, r.quote.currency) : r.position.cost}
                       </td>
-                      <td className="num px-2 py-2.5 text-right">{r.quote ? formatPrice(r.quote.price) : "—"}</td>
+                      <td className="num px-2 py-2.5 text-right">{r.quote ? formatMoney(r.quote.price, r.quote.currency) : "—"}</td>
                       <td className="num px-2 py-2.5 text-right font-semibold">{usd(r.value)}</td>
                       <td className={cn("num px-2 py-2.5 text-right", tone(r.dayPnl))}>
                         {signedUsd(r.dayPnl)}
@@ -230,9 +306,10 @@ export function PortfolioView() {
                 <li key={r.position.id} className="border-b border-separator py-3 last:border-b-0">
                   <div className="flex items-start justify-between gap-3">
                     <Link href={`/symbol/${encodeURIComponent(r.position.symbol)}`} className="flex min-w-0 flex-col leading-tight">
-                      <span className="text-[15px] font-semibold">{r.position.symbol}</span>
+                      <span className="truncate text-[15px] font-semibold">{r.quote ? shortName(r.quote.name) : r.position.symbol}</span>
                       <span className="truncate text-[12px] text-label-2">
-                        {r.position.shares.toLocaleString("en-US", { maximumFractionDigits: 6 })} sh · avg {formatPrice(r.position.cost)} {r.currency !== "—" ? r.currency : ""}
+                        {displaySymbol(r.position.symbol)} · {r.position.shares.toLocaleString("en-US", { maximumFractionDigits: 6 })} sh · avg{" "}
+                        {r.quote ? formatMoney(r.position.cost, r.quote.currency) : r.position.cost}
                       </span>
                     </Link>
                     <div className="flex shrink-0 flex-col items-end leading-tight">
@@ -252,21 +329,19 @@ export function PortfolioView() {
               ))}
             </ul>
           </section>
+          )}
 
           {/* Allocation */}
-          <section aria-labelledby="allocation" className="flex flex-col gap-3">
-            <h2 id="allocation" className="px-1 text-[22px] font-bold">
-              Allocation
-            </h2>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {tab === "allocation" && (
+            <section aria-label="Allocation" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <MeterList title="By Holding" items={byHolding} />
               <MeterList title="By Sector" items={bySector} />
               <MeterList title="By Currency" items={byCurrency} />
-            </div>
-          </section>
+            </section>
+          )}
 
           <p className="px-1 text-[12px] leading-relaxed text-label-2">
-            Day&apos;s P&amp;L includes currency moves. Cost basis is converted to USD at today&apos;s exchange rate, not the rate
+            Day&apos;s P&amp;L includes currency moves. Cost basis is converted to {base} at today&apos;s exchange rate, not the rate
             when you bought. Positions are stored only in this browser — use Export to keep a backup. MarketBoard is a tracker,
             not a brokerage.
           </p>
@@ -299,16 +374,6 @@ export function PortfolioView() {
           </div>
         </div>
       </Sheet>
-    </div>
-  )
-}
-
-function StatTile({ label, value, sub, toneClass }: { label: string; value: string; sub?: string; toneClass?: string }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-[22px] bg-surface px-5 py-4">
-      <span className="text-[13px] text-label-2">{label}</span>
-      <span className={cn("num display text-[24px] font-semibold leading-tight", toneClass)}>{value}</span>
-      {sub && <span className={cn("num text-[13px]", toneClass ?? "text-label-2")}>{sub}</span>}
     </div>
   )
 }

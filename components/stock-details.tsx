@@ -5,7 +5,8 @@ import { AnimatePresence, motion } from "framer-motion"
 import { Area, Bar, ComposedChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import type { ChartData, Stock } from "@/lib/stock-types"
 import { fetchChart } from "@/lib/stock-data"
-import { formatCompact, formatMoney, formatPercent, formatPrice, formatSigned, formatTimeIn } from "@/lib/format"
+import { marketForSymbol, zoneLabel } from "@/lib/markets"
+import { displaySymbol, formatCompact, formatMoney, formatPercent, formatPrice, formatSigned, formatTimeIn, shortName } from "@/lib/format"
 import { ChangePill, NumericText } from "./liquid-glass"
 import { cn } from "@/lib/utils"
 
@@ -63,6 +64,9 @@ function tickLabel(t: number, tf: Timeframe, timeZone: string) {
 }
 
 export function StockDetails({ stock }: StockDetailsProps) {
+  // Times in the exchange's zone with the name a desk uses (IST, EDT), not "GMT+5:30"
+  const home = marketForSymbol(stock.symbol)
+  const deskTime = (t?: number | null) => (home && t ? `${formatTimeIn(t, stock.timeZone, false)} ${zoneLabel(home, t)}` : formatTimeIn(t, stock.timeZone))
   const [timeframe, setTimeframe] = useState<Timeframe>("1D")
   const [reloadKey, setReloadKey] = useState(0)
   // Chart data and the hovered point are tagged with the request they belong to, so switching
@@ -174,17 +178,26 @@ export function StockDetails({ stock }: StockDetailsProps) {
               transition={spring}
               className="flex flex-col"
             >
-              <h2 className="display text-[34px] font-bold leading-none text-foreground">{stock.symbol}</h2>
-              <span className="mt-2 truncate text-[15px] text-label-2">{stock.name}</span>
-              <span className="mt-0.5 text-[13px] text-label-2">
-                {exchangeLabel(stock.exchange)} · {stock.currency ?? "—"}
+              <h2 className="display text-[30px] font-bold leading-tight text-foreground">{shortName(stock.name) || stock.symbol}</h2>
+              <span className="mt-1 text-[13px] text-label-2">
+                {displaySymbol(stock.symbol)} · {exchangeLabel(stock.exchange)} · {stock.currency ?? "—"}
               </span>
+              {stock.high != null && stock.fiftyTwoWHigh != null && stock.high >= stock.fiftyTwoWHigh && (
+                <span className="mt-2 self-start rounded-full bg-up-soft px-2.5 py-0.5 text-[12px] font-semibold text-up">
+                  New 52-week high today: {formatMoney(stock.fiftyTwoWHigh, stock.currency)}
+                </span>
+              )}
+              {stock.low != null && stock.fiftyTwoWLow != null && stock.low <= stock.fiftyTwoWLow && (
+                <span className="mt-2 self-start rounded-full bg-down-soft px-2.5 py-0.5 text-[12px] font-semibold text-down">
+                  New 52-week low today: {formatMoney(stock.fiftyTwoWLow, stock.currency)}
+                </span>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
 
         <div className="flex flex-col sm:items-end">
-          <NumericText value={shownPrice} format={formatPrice} className="display text-[38px] font-semibold leading-none text-foreground" />
+          <NumericText value={shownPrice} format={(n) => formatPrice(n, stock.currency)} className="display text-[38px] font-semibold leading-none text-foreground" />
           <div className="mt-2.5 flex items-center gap-2">
             <ChangePill direction={shownDir}>{formatSigned(shownChange)}</ChangePill>
             <span
@@ -203,7 +216,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
           </div>
           {/* Freshness: when this price is from, the session, and any exchange delay */}
           <span className="num mt-1.5 text-[12px] text-label-2">
-            As of {formatTimeIn(stock.asOf, stock.timeZone)}
+            As of {deskTime(stock.asOf)}
             {stateLabel && ` · ${stateLabel}`}
             {lagMinutes >= 5 && ` · ${lagMinutes} min behind`}
           </span>
@@ -213,7 +226,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
               <span className={cn((ext.change ?? 0) >= 0 ? "text-up" : "text-down")}>
                 {formatSigned(ext.change)} ({formatPercent(ext.pct)})
               </span>
-              {ext.time ? ` · ${formatTimeIn(ext.time, stock.timeZone)}` : ""}
+              {ext.time ? ` · ${deskTime(ext.time)}` : ""}
             </span>
           )}
         </div>
@@ -382,7 +395,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
       {/* Fundamentals */}
       <div className="mt-4 grid grid-cols-2 gap-x-6 rounded-[22px] bg-surface px-5 py-2 sm:grid-cols-4">
         <Stat label="Open" value={formatPrice(stock.open)} />
-        <Stat label="Volume" value={formatCompact(stock.volume)} />
+        <Stat label="Volume" value={formatCompact(stock.volume, stock.currency)} />
         <Stat label="52W High" value={formatPrice(stock.fiftyTwoWHigh)} />
         <Stat label="Yield" value={stock.dividendYield ? `${stock.dividendYield.toFixed(2)}%` : "—"} />
         <Stat label="High" value={formatPrice(stock.high)} />
@@ -391,7 +404,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
         <Stat label="EPS" value={formatMoney(stock.eps, stock.currency)} />
         <Stat label="Low" value={formatPrice(stock.low)} />
         <Stat label="Mkt Cap" value={formatMoney(stock.mktCap, stock.currency, { compact: true })} />
-        <Stat label="Avg Vol" value={formatCompact(stock.avgVol)} />
+        <Stat label="Avg Vol" value={formatCompact(stock.avgVol, stock.currency)} />
         <Stat label="Prev Close" value={formatPrice(stock.prevClose)} />
       </div>
     </div>
