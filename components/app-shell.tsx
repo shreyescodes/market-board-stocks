@@ -2,32 +2,25 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
-import { Briefcase, Globe, List, ListPlus, PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { Briefcase, Globe, List, PanelLeftClose, PanelLeftOpen, TrendingUp } from "lucide-react"
 import { Toaster } from "sonner"
 import { DesktopToolbar, MobileHeader } from "./header"
-import { FeedProvider, WorkspaceProvider, useFeed, useWorkspace } from "./workspace"
+import { FeedProvider, WorkspaceProvider, useFeed } from "./workspace"
 import { MarketProvider } from "./market-context"
+import { MarketPicker } from "./market-picker"
+import { SearchSheet } from "./search"
 import { useMediaQuery, useStoredString, writeStored } from "@/hooks/use-browser"
-import { WatchlistsSheet } from "./watchlists-sheet"
 import { Glass, useRefraction } from "./liquid-glass"
 import { cn } from "@/lib/utils"
 
+// Four destinations; your watchlists live inside the Watchlists page
 const NAV = [
-  { href: "/", label: "Markets", icon: Globe, match: (p: string) => p === "/" },
-  {
-    href: "/portfolio",
-    label: "Portfolio",
-    icon: Briefcase,
-    match: (p: string) => p.startsWith("/portfolio"),
-  },
-  {
-    href: "/watchlists",
-    label: "Watchlists",
-    icon: List,
-    match: (p: string) => p.startsWith("/watchlists"),
-  },
+  { href: "/", label: "Today", icon: TrendingUp, match: (p: string) => p === "/" },
+  { href: "/world", label: "World", icon: Globe, match: (p: string) => p.startsWith("/world") },
+  { href: "/watchlists", label: "Watchlists", icon: List, match: (p: string) => p.startsWith("/watchlists") },
+  { href: "/portfolio", label: "Portfolio", icon: Briefcase, match: (p: string) => p.startsWith("/portfolio") },
 ]
 const spring = {
   type: "spring",
@@ -84,29 +77,43 @@ function ShellChrome({
   const narrow = useMediaQuery("(max-width: 1023px)")
 
   const toggle = useCallback(() => writeStored(COLLAPSED_KEY, collapsed ? "0" : "1"), [collapsed])
+  const [searching, setSearching] = useState(false)
+  const [picking, setPicking] = useState(false)
 
-  // ⌃⌘S toggles the sidebar, as in macOS apps
+  // ⌃⌘S toggles the sidebar, as in macOS apps; ⌘K (Ctrl+K) opens search from anywhere
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.metaKey && e.key.toLowerCase() === "s") {
+      const key = e.key.toLowerCase()
+      if (e.ctrlKey && e.metaKey && key === "s") {
         e.preventDefault()
         toggle()
+      } else if ((e.metaKey || e.ctrlKey) && !e.shiftKey && key === "k") {
+        e.preventDefault()
+        setSearching(true)
       }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [toggle])
 
+  const openSearch = useCallback(() => setSearching(true), [])
+  const openPicker = useCallback(() => setPicking(true), [])
+  const closeSearch = useCallback(() => setSearching(false), [])
+  const closePicker = useCallback(() => setPicking(false), [])
+  const bar = { theme, feed, onToggleTheme, onSearch: openSearch, onPickMarket: openPicker }
+
   return (
     <>
-      <MobileHeader theme={theme} feed={feed} onToggleTheme={onToggleTheme} />
+      <MobileHeader {...bar} />
       <div className="mx-auto flex max-w-[1680px] gap-5 px-3 sm:px-5 md:gap-6 md:pl-3">
         <Sidebar collapsed={collapsed || narrow} canToggle={!narrow} onToggle={toggle} />
         <div className="min-w-0 flex-1">
-          <DesktopToolbar theme={theme} feed={feed} onToggleTheme={onToggleTheme} />
+          <DesktopToolbar {...bar} />
           <main className="pt-4 md:pt-1">{children}</main>
         </div>
       </div>
+      <SearchSheet open={searching} onClose={closeSearch} />
+      <MarketPicker open={picking} onClose={closePicker} />
     </>
   )
 }
@@ -115,11 +122,6 @@ function ShellChrome({
    then sections. Collapses to an icon rail. */
 function Sidebar({ collapsed, canToggle, onToggle }: { collapsed: boolean; canToggle: boolean; onToggle: () => void }) {
   const pathname = usePathname()
-  const router = useRouter()
-  const { workspace, activeWatchlist, setActiveWatchlist } = useWorkspace()
-  const [managing, setManaging] = useState(false)
-  const lists = workspace?.watchlists ?? []
-  const onWatchlists = pathname.startsWith("/watchlists")
 
   const item =
     "press group relative flex h-10 items-center gap-3 rounded-[16px] text-[15px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
@@ -167,10 +169,7 @@ function Sidebar({ collapsed, canToggle, onToggle }: { collapsed: boolean; canTo
           {(!collapsed || canToggle) && <SectionLabel collapsed={collapsed}>Browse</SectionLabel>}
           <ul className="flex flex-col gap-0.5">
             {NAV.map(({ href, label, icon: Icon, match }) => {
-              // On /watchlists the specific list below carries the highlight (as a playlist does in
-              // Music); the rail has no list rows, so there the section icon stays highlighted
-              const listShown = !collapsed && lists.length > 0
-              const active = match(pathname) && !(href === "/watchlists" && listShown)
+              const active = match(pathname)
               return (
                 <li key={href}>
                   <Link
@@ -205,46 +204,6 @@ function Sidebar({ collapsed, canToggle, onToggle }: { collapsed: boolean; canTo
             })}
           </ul>
 
-          {/* Your watchlists, like playlists in Music or folders in Notes */}
-          {!collapsed && lists.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-5 flex min-h-0 flex-col">
-              <div className="flex items-center justify-between pr-1">
-                <SectionLabel collapsed={false}>Watchlists</SectionLabel>
-                <button
-                  onClick={() => setManaging(true)}
-                  aria-label="Manage watchlists"
-                  title="New or manage watchlists"
-                  className="press -mt-1 flex h-7 w-7 items-center justify-center rounded-full text-label-2 outline-none hover:bg-fill hover:text-foreground focus-visible:ring-2 focus-visible:ring-tint/60"
-                >
-                  <ListPlus className="h-4 w-4" />
-                </button>
-              </div>
-              <ul className="hide-scrollbar flex min-h-0 flex-col gap-0.5 overflow-y-auto">
-                {lists.map((l) => {
-                  const active = onWatchlists && l.id === activeWatchlist?.id
-                  return (
-                    <li key={l.id}>
-                      <button
-                        onClick={() => {
-                          setActiveWatchlist(l.id)
-                          if (!onWatchlists) router.push("/watchlists")
-                        }}
-                        aria-current={active ? "true" : undefined}
-                        className={cn(
-                          "press flex h-9 w-full items-center gap-3 rounded-[14px] px-3 text-left text-[14px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-tint/60",
-                          active ? "bg-selection text-foreground" : "text-label-2 hover:bg-selection/50 hover:text-foreground",
-                        )}
-                      >
-                        <List className="h-4 w-4 shrink-0" aria-hidden />
-                        <span className="min-w-0 flex-1 truncate">{l.name}</span>
-                        <span className="num shrink-0 text-[12px] text-label-2">{l.symbols.length}</span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            </motion.div>
-          )}
         </nav>
 
         {!collapsed && (
@@ -253,7 +212,6 @@ function Sidebar({ collapsed, canToggle, onToggle }: { collapsed: boolean; canTo
           </p>
         )}
       </Glass>
-      <WatchlistsSheet open={managing} onClose={() => setManaging(false)} />
     </motion.aside>
   )
 }

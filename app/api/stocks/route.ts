@@ -262,6 +262,26 @@ export async function GET(request: Request) {
       return NextResponse.json(data)
     }
 
+    if (action === "sparks") {
+      // The latest session's shape for many symbols at once, downsampled for small charts.
+      // Each chart comes from the 1D cache, so repeat calls cost Yahoo nothing for a minute.
+      if (!symbols.length) return NextResponse.json({ error: "Missing symbols parameter" }, { status: 400 })
+      const out: Record<string, { points: number[]; previousClose: number | null }> = {}
+      const list = symbols.slice(0, 40)
+      for (let i = 0; i < list.length; i += 8) {
+        await Promise.all(
+          list.slice(i, i + 8).map(async (s) => {
+            const data = await getChart(s, "1D")
+            if (!data || data.points.length < 2) return
+            const step = Math.max(1, Math.ceil(data.points.length / 48))
+            const points = data.points.filter((_, j) => j % step === 0 || j === data.points.length - 1).map((p) => p.price)
+            out[s] = { points, previousClose: data.previousClose }
+          }),
+        )
+      }
+      return NextResponse.json({ sparks: out })
+    }
+
     if (action === "movers") {
       const result = await getMovers()
       if (!result) return NextResponse.json({ error: "Movers unavailable" }, { status: 503 })
@@ -282,10 +302,11 @@ export async function GET(request: Request) {
         const mappedResults = list(results.quotes)
           .flatMap((q) => {
             const symbol = str(q.symbol)
-            if (!symbol || (q.quoteType !== "EQUITY" && q.quoteType !== "ETF")) return []
-            return [{ symbol, name: str(q.shortname) ?? str(q.longname) ?? symbol, exchange: str(q.exchange) ?? "" }]
+            const type = str(q.quoteType)
+            if (!symbol || (type !== "EQUITY" && type !== "ETF" && type !== "INDEX")) return []
+            return [{ symbol, name: str(q.longname) ?? str(q.shortname) ?? symbol, exchange: str(q.exchange) ?? "", type }]
           })
-          .slice(0, 5)
+          .slice(0, 8)
         return NextResponse.json({ results: mappedResults })
       } catch (e) {
         console.warn(`Ticker search failed for ${query}:`, (e as Error).message)

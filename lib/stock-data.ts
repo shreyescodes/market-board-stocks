@@ -77,3 +77,18 @@ export async function fetchProfiles(symbols: string[]): Promise<Record<string, P
     return null
   }
 }
+
+export type Spark = { points: number[]; previousClose: number | null }
+
+/** Downsampled latest-session prices for small inline charts (one request for many symbols) */
+export async function fetchSparks(symbols: string[]): Promise<Record<string, Spark> | null> {
+  if (!symbols.length) return {}
+  try {
+    const res = await fetch(`/api/stocks?action=sparks&symbols=${encodeURIComponent(symbols.slice(0, 40).join(","))}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.sparks ?? null
+  } catch {
+    return null
+  }
+}

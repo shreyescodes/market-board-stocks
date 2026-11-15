@@ -1,1 +1,1 @@
-MarketBoard: live markets for 16 countries. Screenshot of the India view with gold, oil and Bitcoin priced in rupees and the Nifty sector heatmap.
+MarketBoard: live markets for 16 countries. The India view: Nifty 50 against its previous close, breadth, and the Nifty sector heatmap ranked best to worst.

@@ -102,6 +102,23 @@ export const PROFILES: Record<string, MarketProfile> = {
         { symbol: "XLB", name: "Materials" },
       ],
     },
+    // Breadth and same-sector peers; US movers come from Yahoo's screeners
+    largeCaps: {
+      suffix: "",
+      list: [
+        ...tag("Technology", "AAPL", "MSFT", "NVDA", "AVGO", "ORCL", "CRM", "AMD", "ADBE", "CSCO"),
+        ...tag("Communication", "GOOGL", "META", "NFLX", "TMUS", "DIS"),
+        ...tag("Consumer Disc.", "AMZN", "TSLA", "HD", "MCD", "BKNG", "NKE"),
+        ...tag("Financials", "BRK-B", "JPM", "V", "MA", "BAC", "WFC", "GS", "MS", "AXP"),
+        ...tag("Health Care", "LLY", "UNH", "JNJ", "ABBV", "MRK", "TMO"),
+        ...tag("Consumer Staples", "WMT", "COST", "PG", "KO", "PEP"),
+        ...tag("Energy", "XOM", "CVX"),
+        ...tag("Industrials", "GE", "CAT", "RTX", "HON", "UBER"),
+        ...tag("Utilities", "NEE"),
+        ...tag("Real Estate", "PLD"),
+        ...tag("Materials", "LIN"),
+      ],
+    },
   },
 
   ca: {
@@ -298,7 +315,18 @@ export const PROFILES: Record<string, MarketProfile> = {
     },
     largeCaps: {
       suffix: ".NS",
-      list: ["RELIANCE", "HDFCBANK", "TCS", "BHARTIARTL", "ICICIBANK", "INFY", "SBIN", "HINDUNILVR", "ITC", "LT", "BAJFINANCE", "KOTAKBANK", "HCLTECH", "SUNPHARMA", "MARUTI", "M&M", "AXISBANK", "ULTRACEMCO", "NTPC", "TITAN", "ONGC", "POWERGRID", "ADANIENT", "WIPRO", "JSWSTEEL", "TATASTEEL", "COALINDIA", "ASIANPAINT", "BAJAJFINSV", "NESTLEIND", "HINDALCO", "DRREDDY", "CIPLA", "TECHM", "ETERNAL", "TRENT", "ADANIPORTS", "BEL", "EICHERMOT", "APOLLOHOSP"],
+      list: [
+        ...tag("Energy", "RELIANCE", "ONGC", "COALINDIA"),
+        ...tag("Financials", "HDFCBANK", "ICICIBANK", "SBIN", "BAJFINANCE", "KOTAKBANK", "AXISBANK", "BAJAJFINSV"),
+        ...tag("Technology", "TCS", "INFY", "HCLTECH", "WIPRO", "TECHM"),
+        ...tag("Communication", "BHARTIARTL"),
+        ...tag("Consumer Staples", "HINDUNILVR", "ITC", "NESTLEIND"),
+        ...tag("Industrials", "LT", "ADANIPORTS", "BEL", "ADANIENT"),
+        ...tag("Consumer Disc.", "MARUTI", "M&M", "TITAN", "ETERNAL", "TRENT", "EICHERMOT"),
+        ...tag("Materials", "ULTRACEMCO", "JSWSTEEL", "TATASTEEL", "ASIANPAINT", "HINDALCO"),
+        ...tag("Utilities", "NTPC", "POWERGRID"),
+        ...tag("Health Care", "SUNPHARMA", "DRREDDY", "CIPLA", "APOLLOHOSP"),
+      ],
     },
   },
 

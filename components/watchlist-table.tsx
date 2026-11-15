@@ -1,21 +1,25 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ChevronDown, Plus, Search, X } from "lucide-react"
+import { Plus, Search, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { ChangePill, NumericText } from "./liquid-glass"
+import { Segmented } from "./segmented"
+import { Sparkline } from "./sparkline"
 import type { Stock } from "@/lib/stock-types"
-import { formatPercent, formatPrice } from "@/lib/format"
+import type { Spark } from "@/lib/stock-data"
+import { exchangeName } from "@/lib/markets"
+import { displaySymbol, formatMoney, formatPercent, shortName } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-export type WatchlistRow = { symbol: string; stock?: Stock }
+export type WatchlistRow = { symbol: string; stock?: Stock; spark?: Spark }
+type SortBy = "order" | "change" | "name"
 
 interface WatchlistTableProps {
   rows: WatchlistRow[]
   loaded: boolean
   feedStatus: "connecting" | "live" | "stale" | "offline"
   listName: string
-  onManageLists: () => void
   selectedSymbol: string | null
   onSelectStock: (symbol: string) => void
   onAddStock: (symbol: string) => void
@@ -29,7 +33,6 @@ export function WatchlistTable({
   loaded,
   feedStatus,
   listName,
-  onManageLists,
   selectedSymbol,
   onSelectStock,
   onAddStock,
@@ -38,6 +41,7 @@ export function WatchlistTable({
   const [newSymbol, setNewSymbol] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [isAdding, setIsAdding] = useState(false)
+  const [sortBy, setSortBy] = useState<SortBy>("order")
   const [results, setResults] = useState<Array<{ symbol: string; name: string; exchange: string }>>([])
   // Nothing typed, nothing suggested
   const suggestions = newSymbol.trim() ? results : []
@@ -62,9 +66,11 @@ export function WatchlistTable({
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
-    if (!q) return rows
-    return rows.filter((r) => r.symbol.toLowerCase().includes(q) || r.stock?.name.toLowerCase().includes(q))
-  }, [rows, searchQuery])
+    const list = q ? rows.filter((r) => r.symbol.toLowerCase().includes(q) || r.stock?.name.toLowerCase().includes(q)) : rows
+    if (sortBy === "change") return [...list].sort((a, b) => (b.stock?.changePercent ?? -Infinity) - (a.stock?.changePercent ?? -Infinity))
+    if (sortBy === "name") return [...list].sort((a, b) => shortName(a.stock?.name ?? a.symbol).localeCompare(shortName(b.stock?.name ?? b.symbol)))
+    return list
+  }, [rows, searchQuery, sortBy])
 
   const closeAdd = () => {
     setNewSymbol("")
@@ -83,14 +89,7 @@ export function WatchlistTable({
       {/* Large title row */}
       <div className="flex items-center justify-between px-2.5 pb-3 pt-2">
         <div className="flex min-w-0 flex-col leading-none">
-          <button
-            onClick={onManageLists}
-            className="press group -ml-1 flex min-w-0 items-center gap-1 rounded-[10px] px-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
-            aria-label={`${listName}. Switch or manage watchlists`}
-          >
-            <h2 className="display truncate text-[24px] font-bold">{listName}</h2>
-            <ChevronDown className="h-5 w-5 shrink-0 text-label-2 transition-transform group-hover:translate-y-px" aria-hidden />
-          </button>
+          <h2 className="display truncate text-[22px] font-bold">{listName}</h2>
           <span className={cn("mt-1 text-[13px]", feedStatus === "offline" ? "text-down" : "text-label-2")}>
             {feedStatus === "offline"
               ? "Market data unavailable"
@@ -179,6 +178,21 @@ export function WatchlistTable({
         </AnimatePresence>
       </div>
 
+      {/* Sort */}
+      <div className="px-0.5 pb-2">
+        <Segmented
+          label="Sort by"
+          size="sm"
+          value={sortBy}
+          onChange={setSortBy}
+          options={[
+            { value: "order", label: "My order" },
+            { value: "change", label: "% change" },
+            { value: "name", label: "Name" },
+          ]}
+        />
+      </div>
+
       {/* Search capsule */}
       <div className="fill relative mx-0.5 mb-2 flex h-9 items-center rounded-full pl-3 pr-2 focus-within:ring-2 focus-within:ring-tint/40">
         <Search className="h-4 w-4 shrink-0 text-label-2" />
@@ -211,7 +225,7 @@ export function WatchlistTable({
       >
         <AnimatePresence initial={false}>
           {filteredRows.length > 0 ? (
-            filteredRows.map(({ symbol, stock }) => {
+            filteredRows.map(({ symbol, stock, spark }) => {
               const isSelected = selectedSymbol === symbol
               return (
                 <motion.div
@@ -228,7 +242,7 @@ export function WatchlistTable({
                   aria-keyshortcuts="Delete"
                   aria-label={
                     stock
-                      ? `${symbol}, ${stock.name}, ${formatPrice(stock.price)}, ${formatPercent(stock.changePercent)}`
+                      ? `${shortName(stock.name)}, ${symbol}, ${formatMoney(stock.price, stock.currency)}, ${formatPercent(stock.changePercent)}`
                       : `${symbol}, no quote yet`
                   }
                   onKeyDown={(e) => {
@@ -250,13 +264,22 @@ export function WatchlistTable({
                   )}
 
                   <div className="relative flex min-w-0 flex-1 flex-col leading-tight">
-                    <span className="text-[15px] font-semibold">{symbol}</span>
-                    <span className="truncate text-[12px] text-label-2">{stock?.name ?? "\u00a0"}</span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate text-[15px] font-semibold">{stock ? shortName(stock.name) : displaySymbol(symbol)}</span>
+                      {stock?.exchange && (
+                        <span className="shrink-0 rounded-[4px] bg-fill px-1 py-px text-[9px] font-bold uppercase text-label-2">{exchangeName(stock.exchange)}</span>
+                      )}
+                    </span>
+                    <span className="truncate text-[12px] text-label-2">{displaySymbol(symbol)}</span>
+                  </div>
+
+                  <div className="relative hidden w-[60px] shrink-0 sm:block">
+                    <Sparkline points={spark?.points ?? []} baseline={spark?.previousClose ?? stock?.prevClose} width={60} height={22} />
                   </div>
 
                   <div className="relative flex shrink-0 flex-col items-end gap-1 leading-none">
                     {stock ? (
-                      <NumericText value={stock.price} format={formatPrice} className="text-[15px] font-semibold text-foreground" />
+                      <NumericText value={stock.price} format={(n) => formatMoney(n, stock.currency)} className="text-[15px] font-semibold text-foreground" />
                     ) : (
                       <span className="num text-[15px] font-semibold text-label-2">—</span>
                     )}

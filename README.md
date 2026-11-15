@@ -2,117 +2,113 @@
 
 # MarketBoard
 
-A markets dashboard, portfolio tracker and watchlist app with an Apple-style Liquid Glass interface, built with Next.js. Pick any of 16 markets worldwide and the Markets page shows that country's indexes, currency, commodities, sectors and movers. Quotes, charts, index levels, rates, currencies, commodities, movers and ticker search come from Yahoo Finance through a small server route, so no API key is needed.
+A markets dashboard, portfolio tracker and watchlist app with an Apple-style Liquid Glass interface, built with Next.js. Pick any of 16 markets worldwide and the whole app looks through it: that country's indexes, session, sectors, movers, currency and commodities, with your portfolio valued in its currency. Quotes, charts, index levels, rates, currencies, commodities, movers and ticker search come from Yahoo Finance through a small server route, so no API key is needed.
 
 **Live:** [market-board-ecru.vercel.app](https://market-board-ecru.vercel.app)
 
-![Markets page in dark mode: sidebar navigation, US market status, index strip, Treasury yields and currencies](docs/screenshots/dark.png)
+![Today in dark mode for the United States: session and trading-hours bar, Dow Jones with its intraday line, S&P 500, Nasdaq and VIX, breadth, sectors ranked best to worst and movers](docs/screenshots/dark.png)
 
-![Watchlists page in light mode: a watchlist beside the AAPL intraday chart and fundamentals](docs/screenshots/light.png)
+![Today in light mode for India: Nifty 50 against its previous close, Sensex and India VIX, breadth, Nifty sectoral indexes and movers with value traded in rupee crore](docs/screenshots/india.png)
 
 ## Features
 
-A full-height glass sidebar switches between three sections and lists your watchlists, the way Music lists playlists. Hide it to an icon rail with the sidebar button or **⌃⌘S**; your choice is remembered. On medium-width screens it shows as the icon rail, and on phones it becomes a floating tab bar. Every symbol anywhere in the app opens its own page.
+Four destinations, **Today, World, Watchlists and Portfolio**, sit in a full-height glass sidebar on desktop (hide it to an icon rail with **⌃⌘S**) and in a floating glass tab bar on phones. The toolbar on every page carries the **market you're looking through**, **search** and the feed status. Every symbol anywhere opens its own page.
 
-### Markets
-Pick a market from the first tile and **the whole page follows it**. Switch to India and every card shows Indian data, priced in rupees. The choice is remembered and stays in sync across open tabs.
+### The market lens
+- **Pick a market once.** The button at the left of the toolbar lists all 16 markets with their local time and live session. Your choice drives Today, the Portfolio's currency and the symbol pages' breadcrumbs, is remembered, and stays in sync across tabs.
+- **Local conventions.** Prices use each currency's own digit grouping (India in lakhs: ₹3,66,244.91), large rupee amounts read in crore (₹400.5 cr, ₹12.41 lakh cr), and times carry the zone a desk would use (IST, EDT, AEDT).
 
-- **Market status and indexes.** The first tile shows whether a market is open, in pre-market, after hours, on a lunch break, closed or on holiday, with a countdown and a progress bar for the session. Tap it to see 16 markets worldwide with their local time and status, and pick one.
-  - **Holidays and early closes** are built in: "Holiday · Thanksgiving Day · Pre-market Fri 4:00 AM", "Early close in 1h 30m".
-  - **Countdowns skip holidays,** so on the Friday before Martin Luther King Jr. Day the US shows "Pre-market Tue 4:00 AM".
-  - **Indexes follow the market:** Dow Jones, S&P 500 and Nasdaq for the United States; Nifty 50 (NSE) and Sensex (BSE) for India; FTSE 100 for the UK; Nikkei 225 for Japan; and so on, 46 indexes in all. Tap **Add Index** to choose from that market's list and **×** to remove one, up to three. Each market remembers its own choice.
-- **Rates or benchmarks.** US Treasury yields (13-week, 5, 10 and 30-year) with changes in basis points for the United States. Every other market shows all of its main indexes here instead, because Yahoo carries no other government bond yields.
-- **Currencies.** The local currency against its main trading partners, written the way local desks quote them: USD/INR in India, EUR/USD in Germany, GBP/EUR in the UK, AUD/USD in Australia. The US also shows the dollar index.
-- **Commodities.** Six front-month futures picked for each economy: soybeans, coffee and sugar for Brazil; platinum and palladium for South Africa; lumber for Canada; Dutch TTF gas for Europe.
-  - **Priced in the local currency,** with the original US-dollar (or euro) price underneath, e.g. gold at ₹366,245 with $3,886.30 / troy oz below it.
-  - **The day's change includes the currency's move,** so gold up 0.03% in dollars with the rupee down 0.21% shows +0.24% in India.
-- **Crypto and volatility.** Bitcoin and Ethereum in the local currency, plus the local volatility index where one exists (VIX, India VIX, ASX VIX).
-- **Sectors.** A heatmap tinted by the size of today's move.
-  - **Official sector indexes or funds** for 8 markets: Select Sector SPDRs (US), Nifty sectoral indexes (India), S&P/ASX 200 sectors (Australia), TOPIX-17 ETFs (Japan), CSI sectors (China), Hang Seng sub-indexes (Hong Kong), B3 sector indexes (Brazil) and iShares TSX sector ETFs (Canada). Tap a tile to open it.
-  - **Computed for the other 8** (UK, Germany, France, Switzerland, Saudi Arabia, South Africa, South Korea, Singapore), where Yahoo has none: each sector's move is weighted by market cap across that market's largest listings, and the tile says how many stocks it covers.
-- **Movers.** Top gainers, top losers and most active.
-  - **United States:** Yahoo's screeners, refreshed every minute.
-  - **Other markets:** Yahoo's screeners only cover US listings, so the app ranks each market's 28–40 largest listings instead. Most active is measured by value traded, because share counts aren't comparable across price levels, and the header shows how many are up and how many are down.
+### Today
+One question per section, in the order a desk asks them:
+1. **How is my market doing?** One header card: open, pre-market, lunch, after hours, closed or holiday, with a countdown, a trading-hours bar and the as-of time; the main index large with its intraday line against a dashed previous close and the day's range; your other pinned indexes and the local volatility index (VIX, India VIX, ASX VIX); and **breadth**, how many of the market's largest listings are up and down.
+   - **Pin up to three indexes** from **All indexes**, 46 in all (Dow, S&P 500 and Nasdaq; Nifty 50, Sensex and Nifty Bank; FTSE 100; Nikkei 225; …). Each market remembers its own.
+   - **Holidays and early closes** are built in, and countdowns skip them ("Pre-market Tue 4:00 AM" before Martin Luther King Jr. Day).
+2. **What's moving?** Sectors ranked best to worst beside movers (Gainers, Losers, Most active) with company names and value traded.
+   - **Sectors** come from official indexes or funds in 8 markets (SPDRs, Nifty sectoral, S&P/ASX 200, TOPIX-17, CSI, Hang Seng, B3, iShares TSX) and are cap-weighted from the largest listings in the other 8.
+   - **Movers** come from Yahoo's screeners in the US; elsewhere the app ranks each market's 28–40 largest listings, and most active means value traded, since share counts aren't comparable across prices.
+3. **How is my list doing?** A strip of your watchlist with intraday sparklines.
+4. **What's the context?** One card with tabs: Rates (US Treasury yields in basis points), Currencies (quoted the way local desks write them: USD/INR, EUR/USD, GBP/EUR, AUD/USD), Commodities and Crypto. Commodities and crypto are **priced in the local currency** with the dollar price underneath, and the day's change includes the currency's own move (gold +0.03% in dollars shows +0.24% in rupees when the rupee falls 0.21%).
 
 <details>
 <summary><strong>What each market shows</strong></summary>
 
-| Market | Currency | First card | Commodities | Volatility | Sectors | Movers |
-| --- | --- | --- | --- | --- | --- | --- |
-| United States | USD | Treasury yields | WTI, Brent, natural gas, gold, silver, copper | VIX | Select Sector SPDRs (11) | Yahoo screeners |
-| Canada | CAD | 1 index | WTI, natural gas, gold, silver, copper, lumber | — | iShares TSX sector ETFs (8) | 34 large caps |
-| Brazil | BRL | 4 indexes | Brent, soybeans, coffee, sugar, corn, gold | — | B3 sector indexes (7) | 28 large caps |
-| United Kingdom | GBP | 2 indexes | Brent, Dutch TTF gas, gold, silver, copper, WTI | — | Computed | 35 large caps |
-| Germany | EUR | 4 indexes | Brent, Dutch TTF gas, gold, copper, aluminum, silver | — | Computed | 35 large caps |
-| France | EUR | 3 indexes | Brent, Dutch TTF gas, gold, wheat, copper, silver | — | Computed | 34 large caps |
-| Switzerland | CHF | 2 indexes | Gold, silver, platinum, Brent, Dutch TTF gas, copper | — | Computed | 31 large caps |
-| Saudi Arabia | SAR | 1 index | Brent, WTI, natural gas, gold, aluminum, copper | — | Computed | 31 large caps |
-| South Africa | ZAR | 2 indexes | Gold, platinum, palladium, Brent, copper, silver | — | Computed | 35 large caps |
-| India | INR | 7 indexes | Gold, silver, Brent, WTI, natural gas, copper | India VIX | Nifty sectoral indexes (12) | 40 large caps |
-| China | CNY | 3 indexes | Copper, gold, soybeans, Brent, aluminum, silver | — | CSI sector indexes (10) | 34 large caps |
-| Hong Kong | HKD | 2 indexes | Gold, Brent, copper, silver, WTI, natural gas | — | Hang Seng sub-indexes (4) | 36 large caps |
-| Japan | JPY | 1 index | Brent, WTI, natural gas, gold, copper, platinum | — | TOPIX-17 sector ETFs (17) | 40 large caps |
-| South Korea | KRW | 3 indexes | Brent, WTI, copper, gold, natural gas, aluminum | — | Computed | 37 large caps |
-| Singapore | SGD | 1 index | Brent, WTI, gold, natural gas, copper, silver | — | Computed | 29 large caps |
-| Australia | AUD | 3 indexes | Gold, copper, Brent, natural gas, wheat, silver | ASX VIX | S&P/ASX 200 sectors (11) | 39 large caps |
+| Market | Currency | Volatility | Sectors | Movers |
+| --- | --- | --- | --- | --- |
+| United States | USD | VIX | Select Sector SPDRs (11) | Yahoo screeners; breadth from 50 large caps |
+| Canada | CAD | — | iShares TSX sector ETFs (8) | 34 large caps |
+| Brazil | BRL | — | B3 sector indexes (7) | 28 large caps |
+| United Kingdom | GBP | — | Computed | 35 large caps |
+| Germany | EUR | — | Computed | 35 large caps |
+| France | EUR | — | Computed | 34 large caps |
+| Switzerland | CHF | — | Computed | 31 large caps |
+| Saudi Arabia | SAR | — | Computed | 31 large caps |
+| South Africa | ZAR | — | Computed | 35 large caps |
+| India | INR | India VIX | Nifty sectoral indexes (12) | 40 large caps |
+| China | CNY | — | CSI sector indexes (10) | 34 large caps |
+| Hong Kong | HKD | — | Hang Seng sub-indexes (4) | 36 large caps |
+| Japan | JPY | — | TOPIX-17 sector ETFs (17) | 40 large caps |
+| South Korea | KRW | — | Computed | 37 large caps |
+| Singapore | SGD | — | Computed | 29 large caps |
+| Australia | AUD | ASX VIX | S&P/ASX 200 sectors (11) | 39 large caps |
+
+Each market also has six commodities picked for its economy (soybeans, coffee and sugar for Brazil; platinum and palladium for South Africa; lumber for Canada; Dutch TTF gas for Europe) and its main currency pairs.
 
 </details>
 
-![Markets page in light mode with India selected: commodities and crypto priced in rupees with US-dollar prices beneath, India VIX, and the Nifty sector heatmap](docs/screenshots/india.png)
+### World
+All 16 markets in one table, grouped by region: session and next open, local time, main index, last, change and the last session's shape. Tiles above it answer the quick questions: how many are open, which opens next, how many were up and down, and the biggest move. Choosing a market makes it your lens and opens Today.
 
-<sub>India selected: gold, oil and Bitcoin in rupees with the dollar price underneath, and the NSE's own sector indexes.</sub>
-
-| Choose indexes | World market hours |
+| World | Search |
 | --- | --- |
-| ![United States Indexes sheet with Dow Jones and S&P 500 selected](docs/screenshots/index-picker.png) | ![World Markets sheet listing exchanges with live open/closed status](docs/screenshots/world-markets.png) |
+| ![World page in dark mode: tiles for open now, next to open, up and down, biggest move; the 16 markets grouped by region with session, local time, index, change and sparklines](docs/screenshots/world.png) | ![Search sheet over the Today page: results for hdfc with exchange, country, price and change](docs/screenshots/search.png) |
+
+### Search
+**⌘K** (or the search field) from any page finds stocks, ETFs and indexes on every exchange Yahoo covers, with exchange, country and live price. **Enter** opens the symbol page; **⌘Enter** or **+** adds it to your watchlist without leaving. Recent searches show when the field is empty.
+
+### Watchlists
+- **Your lists live here:** each with its count and today's up/down, plus **New list**, rename and delete.
+- **The list:** company names first, then ticker and exchange badge, an intraday sparkline, price in the stock's own currency and the day's change. Sort by your order, % change or name; filter; add any ticker; remove with × or Delete, with **Undo**.
+- **Detail:** the selected stock's chart and stats beside the list, with **Open page**.
+
+![Watchlists in light mode: your lists, the list with sparklines and exchange badges, and Apple's intraday chart with after-hours price and a new 52-week-high flag](docs/screenshots/light.png)
 
 ### Portfolio
-- **Positions.** Add holdings with shares and average cost; buying more of something you already hold merges into one position at the weighted average cost. Edit or remove a position (with **Undo**).
-- **Valuation in USD.**
-  - **Totals:** market value, day's P&L, total P&L and cost basis, per position and overall.
-  - **Currency conversion:** holdings in other currencies use live exchange rates. Day's P&L includes currency moves, and prices quoted in pence or other minor units are handled.
-  - **Missing data:** a holding with no quote or exchange rate is left out of the totals and flagged, never estimated.
-- **Allocation.** By holding, by sector and by currency, as ranked bars.
-- **Backup.** **Export** downloads your watchlists and portfolio as a JSON file; **Import** restores one after a confirmation.
+- **Valued in your market's currency** (INR when India is your lens), with a USD switch. Holdings in other currencies convert at live exchange rates; today's change includes currency moves; prices in pence or other minor units are handled.
+- **Three numbers on top:** value, today and total return on cost, with an allocation bar and currency exposure. **Holdings** and **Allocation** (by holding, sector and currency) are tabs.
+- **Positions:** add with shares and average cost; buying more of something you hold merges at the weighted average. Edit or remove with **Undo**. A holding with no quote or rate is flagged and left out of the totals, never estimated.
+- **Backup:** export your watchlists and portfolio as JSON, or import one, from the **⋯** menu.
 
-![Portfolio page with an example portfolio: summary tiles, holdings table with USD values and P&L, and allocation](docs/screenshots/portfolio.png)
+![Portfolio in light mode valued in rupees: value, today and total return, allocation bar, and holdings in their own currencies converted to INR](docs/screenshots/portfolio.png)
 
 <sub>The portfolio above is an example; prices and exchange rates are live.</sub>
 
-### Watchlists
-- **Multiple lists.** Create, rename, switch and delete named watchlists.
-- **The list.** Price and daily change for each symbol. Search it, add any ticker through Yahoo Finance autocomplete, or remove one with the × button that appears on hover (or the Delete key), with **Undo**.
-- **Detail view.** Selecting a symbol shows its full page beside the list.
-
 ### Symbol pages
-- **Chart.** A large price header, a 1D / 1W / 1M / 3M / 1Y / ALL range control, and a price chart with a time axis and volume bars. Moving the pointer across the chart shows the price, change and time at that point in the header, the way Apple's Stocks app does.
-  - **1D:** shows the latest regular trading session, with a dotted line at the official previous close.
-  - **Times:** all chart times are in the exchange's own time zone.
-- **Freshness.** Under the price you'll see when the quote is from and the market session, for example "As of 3:12 PM EST · Market open". If the quote falls behind during trading you'll see how far ("6 min behind"). Pre-market and after-hours prices appear when Yahoo has them.
-- **Fundamentals.** Open, high, low, previous close, volume, average volume, market cap, P/E, EPS, dividend yield and the 52-week range, all taken from the live quote.
-- **Actions.** **Add to Watchlist** and **Add to Portfolio** from any symbol page. Each symbol has its own link, e.g. `/symbol/AAPL`.
+- **Where it sits:** a breadcrumb to its market and sector, and **More in that sector** from the same market's largest listings.
+- **Chart:** a 1D / 1W / 1M / 3M / 1Y / ALL range control with volume bars; moving the pointer shows the price and time at that point, the way Apple's Stocks app does. 1D shows the latest session against a dotted previous close, in the exchange's time zone.
+- **Freshness:** "As of 3:28 PM IST · Market closed", how far a lagging quote is behind, and pre-market or after-hours prices when Yahoo has them. A new 52-week high or low is flagged.
+- **Fundamentals** from the live quote, and **Add to Watchlist** / **Add to Portfolio**. Each symbol has its own link, e.g. `/symbol/AAPL`.
 
 ### Throughout
-- **Light and dark appearance.** Follows your system setting on load. The sun/moon button switches it.
-- **Responsive layout.** Sidebar navigation on desktop; a floating glass tab bar on phones.
-- **Storage.** Watchlists, positions, and market and index choices are saved in this browser, and kept in sync across open tabs.
+- **Light and dark appearance**, following your system until you pick one.
+- **Phones:** a compact glass top bar (market, search, appearance) and a floating tab bar; every page fits without sideways scrolling, and pinch-zoom works.
+- **Storage:** watchlists, positions, your market and pinned indexes are saved in this browser and kept in sync across tabs.
 
 <p align="center">
-  <img src="docs/screenshots/mobile.png" alt="Markets page on a phone, with the floating glass tab bar" width="320" />
+  <img src="docs/screenshots/mobile.png" alt="Today on a phone for India in dark mode: market chip and search in the top bar, Nifty 50 with its intraday line, and the floating glass tab bar" width="320" />
 </p>
 
-<sub>Screenshots taken from the running app with live Yahoo Finance data on Saturday, November 14, 2026, so markets show as closed with Friday's closing prices.</sub>
+<sub>Screenshots taken from the running app with live Yahoo Finance data on Sunday, November 15, 2026: most markets show Friday's close, and Saudi Arabia, which trades on Sundays, is open.</sub>
 
 ## Design
 
-The interface follows Apple's Liquid Glass approach: content sits on a plain black or white background, and glass is used only for the floating layer of controls.
+The interface follows Apple's Liquid Glass approach: content sits on a plain background (black, or the grouped grey of iOS Settings in light mode) on solid cards, and glass is used only for the floating layer of controls.
 
-- **Layout like a macOS app.** The sidebar is a full-height floating glass pane carrying the app name and the sidebar toggle. The toolbar (feed status, clock and appearance) floats over the content area only, and content softens as it scrolls beneath it.
-- **Glass surfaces.** The sidebar, the toolbar, the phone tab bar, sheets and toasts are translucent with background blur, a thin highlight along the top edge and a soft shadow. Lists, charts and tables are plain content and never glass.
-- **Edge refraction.** In Chromium browsers (Chrome, Edge, Brave, Arc) the toolbar and the phone tab bar also bend the content scrolling beneath them at their rims. This uses an SVG displacement map applied with `backdrop-filter`. Safari and Firefox get the frosted blur without the bending.
-- **System palette.** Colors are Apple's system values for labels, separators, fills, green, red and blue, with separate light and dark sets.
-- **Motion.** Prices roll digit by digit when they change. The navigation, range control and watchlist selection slide between items on spring animations, and sheets grow out of the control that opened them.
-- **Accessibility.** Text and color-coded values meet WCAG AA contrast (4.5:1) in both appearances. Everything works by keyboard: arrow keys move through the chart ranges, Delete removes the focused watchlist row, and open sheets keep focus inside until closed.
+- **Glass for controls only.** The sidebar, the toolbar, the phone top bar and tab bar, segmented controls, sheets and toasts are translucent with background blur, a thin highlight along the top edge and a soft shadow. Numbers always sit on solid cards so they stay crisp.
+- **Edge refraction.** In Chromium browsers (Chrome, Edge, Brave, Arc) the toolbar and the phone tab bar also bend the content beneath them at their rims, using an SVG displacement map with `backdrop-filter`. Safari and Firefox get the frosted blur without the bending.
+- **Desk-grade numbers.** Tabular figures, right-aligned and always signed (+/−), so colour is never the only signal; provenance (source, delay, as-of time) on every screen.
+- **Calm by default.** No ticking seconds or pulsing; prices roll digit by digit only when they change, and selections slide on spring animations.
+- **System palette.** Apple's system colours for labels, separators, fills, green, red and blue, with separate light and dark sets.
+- **Accessibility.** Text and colour-coded values meet WCAG AA contrast (4.5:1) in both appearances. Everything works by keyboard: ⌘K search with arrow keys, arrow keys through chart ranges, Delete on a watchlist row, and open sheets keep focus inside until closed.
 
 ## Where the data comes from
 
@@ -132,16 +128,18 @@ All market data comes from Yahoo Finance through [`yahoo-finance2`](https://gith
 | Movers and computed sectors for other markets | **Computed** from live quotes for each market's largest listings |
 | Sector and country for portfolio allocation | Yahoo company profile, cached for a day |
 | Exchange rates for portfolio valuation | Live Yahoo FX quotes (`INRUSD=X`, `GBPUSD=X`, …) |
-| Ticker search | Live Yahoo search |
+| Intraday sparklines | Live Yahoo 1D chart, downsampled on the server for many symbols at once |
+| Breadth (up/down counts) | **Computed** from live quotes for each market's largest listings |
+| Ticker search | Live Yahoo search (stocks, ETFs and indexes) |
 | Market open/closed status | **Computed** from each exchange's hours and holiday rules, then **checked live** against Yahoo's session state for the market's main index |
 
 **The app never invents data.** If Yahoo can't be reached, the last real prices stay on screen unchanged and the toolbar says **Reconnecting** with the time of the last good update. If there is no data at all, prices show "—" and the toolbar says **Offline**. A chart with no data shows an empty state with a **Try Again** button.
 
 **Refresh rates.** Each of these is one batched request:
 - **Every 10 seconds:** watchlist, portfolio and symbol-page quotes, including the exchange rates the portfolio needs.
-- **Every 12 seconds:** index levels in the strip.
-- **Every 15 seconds:** rates or benchmarks, currencies, commodities, crypto, sectors and (outside the US) the large-cap quotes behind movers on the Markets page.
-- **Every minute:** US movers, live market status for all 16 markets, and the open 1D chart.
+- **Every 15 seconds:** on Today, indexes, currencies, commodities, crypto, sectors and the large-cap quotes behind breadth and movers.
+- **Every minute:** each market's main index on every page (for the market picker, World and live session status), US movers, the main index's intraday line and the open 1D chart.
+- **Every two minutes:** intraday sparklines on Today, World and Watchlists.
 - **Once a day:** company profiles (sector and country), cached on the server.
 
 The server caches results briefly, so several open tabs don't multiply the load on Yahoo. Refreshing slows down while the feed is failing and pauses while the tab is hidden.
@@ -194,63 +192,70 @@ The front end talks only to `GET /api/stocks`:
 | `?action=chart&symbol=AAPL&timeframe=1M` | Price and volume history for `1D`, `1W`, `1M`, `3M`, `1Y` or `ALL`, with the exchange's time zone |
 | `?action=movers` | Top 10 US gainers, losers and most active. Cached for a minute |
 | `?action=profiles&symbols=AAPL,SPY` | Sector, industry, country and instrument type. Cached for a day |
-| `?action=search&query=netflix` | Up to five matching stocks or ETFs |
+| `?action=sparks&symbols=AAPL,^NSEI` | The latest session's prices, downsampled for small charts, for up to 40 symbols in one call (from the 1D chart cache) |
+| `?action=search&query=netflix` | Up to eight matching stocks, ETFs or indexes |
 
 ## Adding or changing a market
 
-Everything the Markets page shows for a market lives in its entry in `lib/market-profiles.ts`; the page itself has no per-country code.
+Everything Today shows for a market lives in its entry in `lib/market-profiles.ts`; the page itself has no per-country code.
 
 1. **Exchange hours and status:** add the market to `MARKETS` in `lib/markets.ts` (and its holiday rules to `lib/holidays.ts` if they are predictable).
-2. **Indexes:** add its indexes to `INDEX_CATALOG` in `lib/indices.ts`. The first three are the defaults in the strip.
+2. **Indexes:** add its indexes to `INDEX_CATALOG` in `lib/indices.ts`. The first three are the default pinned indexes in the header.
 3. **Profile:** add an entry to `PROFILES` with:
    - `currency`: the ISO code everything is priced in
    - `fx`: counter currencies; pairs and their direction are built for you
    - `commodities`: six keys from `COMMODITIES`
    - `volatility` (optional): the local volatility index
    - `sectors` (optional): sector indexes or ETFs. Leave it out and sectors are computed from `largeCaps`, which then need a sector on each entry (use `tag()`)
-   - `largeCaps`: the movers universe, as tickers plus the Yahoo suffix (`.NS`, `.L`, `.T`, …). Keep it to 50 or fewer
+   - `largeCaps`: the universe for breadth, movers and same-sector peers, as tickers plus the Yahoo suffix (`.NS`, `.L`, `.T`, …), tagged with sectors via `tag()`. Keep it to 50 or fewer
 4. **Check every symbol** returns a live, current quote from `/api/stocks?action=quotes&symbols=…` before committing. Yahoo renames and drops tickers, and a missing one shows as "—" rather than an error.
 
 ## Project structure
 
 ```
 app/
-  layout.tsx              Root layout: wraps every page in the app shell
-  page.tsx                Markets
-  portfolio/page.tsx      Portfolio
+  layout.tsx              Root layout and link-preview metadata
+  page.tsx                Today
+  world/page.tsx          World
   watchlists/page.tsx     Watchlists
+  portfolio/page.tsx      Portfolio
   symbol/[symbol]/page.tsx  A page per symbol
-  api/stocks/route.ts     Yahoo Finance proxy: quotes, charts, movers, profiles, search
+  api/stocks/route.ts     Yahoo Finance proxy: quotes, charts, sparks, movers, profiles, search
   globals.css             Design tokens and the glass material
 components/
-  app-shell.tsx           Collapsible glass sidebar, page layout and phone tab bar
-  workspace.tsx           Shared state: watchlists, positions and feed health
-  market-context.tsx      The selected market, shared by the strip and the Markets page
-  markets-view.tsx        Markets page
-  portfolio-view.tsx      Portfolio page
+  app-shell.tsx           Glass sidebar, toolbar wiring (search, market picker, ⌘K) and phone tab bar
+  header.tsx              Desktop toolbar and phone top bar: market lens, search, feed status
+  market-context.tsx      The market lens and the shared feed of each market's main index
+  market-picker.tsx       Choose a market: local time and live session for all 16
+  search.tsx              ⌘K search: open a symbol or add it to a watchlist
+  markets-view.tsx        Today: header, sectors, movers, watchlist strip, context tabs
+  indexes-sheet.tsx       Every index for the market; pin up to three to the header
+  world-view.tsx          World: all markets in one table
+  watchlists-view.tsx     Watchlists: your lists, the list and the detail
+  watchlist-table.tsx     The list: sort, filter, add, select, remove
+  watchlists-sheet.tsx    Create, rename and delete watchlists
+  portfolio-view.tsx      Portfolio in the lens currency
   position-sheet.tsx      Add / edit a position
-  watchlists-view.tsx     Watchlists page
-  watchlists-sheet.tsx    Switch, create, rename and delete watchlists
-  watchlist-table.tsx     The watchlist: search, add, select, remove
-  symbol-view.tsx         Symbol page
+  symbol-view.tsx         Symbol page: breadcrumb, details, same-sector peers
   stock-details.tsx       Price header, range control, chart, fundamentals
-  market-bar.tsx          Market-status tile, index strip and their pickers
-  header.tsx              Floating glass toolbar (desktop) and top bar (phone)
+  segmented.tsx           Segmented control with a sliding glass thumb
+  sparkline.tsx           Small session chart against the previous close
   liquid-glass.tsx        Glass surface, edge refraction, rolling numbers, change pill
   sheet.tsx               Glass sheet used for pickers and forms
 hooks/
   use-poll.ts             Polling with back-off that pauses in hidden tabs
   use-quotes.ts           Batched live quotes for any set of symbols
+  use-sparks.ts           Batched intraday sparklines
   use-browser.ts          Hydration-safe browser state: saved choices, media queries, the clock
 lib/
   storage.ts              Browser storage, migration and backup files
-  portfolio.ts            Portfolio valuation in USD and allocation
+  portfolio.ts            Portfolio valuation in any base currency, and allocation
   indices.ts              Indexes for each market, with their exchange
   market-profiles.ts      Per-market currency, FX pairs, commodities, sectors and large caps
-  markets.ts              Exchange hours and the open/closed status logic
+  markets.ts              Exchange hours, open/closed status, zone names, symbol → market
   holidays.ts             Holiday and early-close calendars computed from exchange rules
-  stock-data.ts           Client fetch helpers (quotes, charts, movers, profiles)
-  format.ts               Price, money and time formatting per currency and time zone
+  stock-data.ts           Client fetch helpers (quotes, charts, sparks, movers, profiles)
+  format.ts               Prices, money and times per currency and local convention
   stock-types.ts
 ```
 
