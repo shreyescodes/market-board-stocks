@@ -85,7 +85,7 @@ export function WatchlistTable({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-[28px] bg-surface p-2.5">
+    <div className="flex h-full flex-col rounded-[22px] bg-surface p-2.5">
       {/* Large title row */}
       <div className="flex items-center justify-between px-2.5 pb-3 pt-2">
         <div className="flex min-w-0 flex-col leading-none">
@@ -294,7 +294,7 @@ export function WatchlistTable({
                       e.stopPropagation()
                       onRemoveStock(symbol)
                     }}
-                    className="press relative -mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 opacity-0 transition-opacity hover:bg-fill-hover hover:text-foreground group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                    className="press relative -mr-1 flex h-8 w-8 shrink-0 md:h-6 md:w-6 items-center justify-center rounded-full bg-fill text-label-2 opacity-0 transition-opacity hover:bg-fill-hover hover:text-foreground group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
                     aria-label={`Remove ${symbol}`}
                   >
                     <X className="h-3.5 w-3.5" strokeWidth={2.5} />

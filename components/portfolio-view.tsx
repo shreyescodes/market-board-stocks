@@ -177,19 +177,19 @@ export function PortfolioView() {
             <div className="flex flex-wrap gap-x-8 gap-y-4">
               <div className="flex min-w-[220px] flex-[1.4] flex-col gap-0.5">
                 <span className="text-[13px] font-semibold text-label-2">Value</span>
-                <span className="num display text-[36px] font-bold leading-tight">{usd(summary.value)}</span>
+                <span className="num display whitespace-nowrap text-[36px] font-bold leading-tight">{usd(summary.value)}</span>
                 <span className="text-[12px] text-label-2">
                   {valued.length} of {positions.length} holdings valued
                 </span>
               </div>
               <div className="flex min-w-[150px] flex-1 flex-col gap-0.5 border-separator md:border-l md:pl-6">
                 <span className="text-[13px] font-semibold text-label-2">Today</span>
-                <span className={cn("num text-[24px] font-bold", tone(summary.dayPnl))}>{signedUsd(summary.dayPnl)}</span>
+                <span className={cn("num whitespace-nowrap text-[21px] font-bold lg:text-[24px]", tone(summary.dayPnl))}>{signedUsd(summary.dayPnl)}</span>
                 <span className={cn("num text-[14px] font-semibold", tone(summary.dayPnl))}>{formatPercent(summary.dayPct)}</span>
               </div>
               <div className="flex min-w-[150px] flex-1 flex-col gap-0.5 border-separator md:border-l md:pl-6">
                 <span className="text-[13px] font-semibold text-label-2">Total return</span>
-                <span className={cn("num text-[24px] font-bold", tone(summary.totalPnl))}>{signedUsd(summary.totalPnl)}</span>
+                <span className={cn("num whitespace-nowrap text-[21px] font-bold lg:text-[24px]", tone(summary.totalPnl))}>{signedUsd(summary.totalPnl)}</span>
                 <span className="num text-[14px] text-label-2">
                   <span className={cn("font-semibold", tone(summary.totalPnl))}>{formatPercent(summary.totalPct)}</span> on {usd(summary.costBasis)} cost
                 </span>
@@ -247,7 +247,7 @@ export function PortfolioView() {
             </h2>
 
             {/* Table on wide screens */}
-            <div className="hidden overflow-x-auto md:block">
+            <div className="relative hidden overflow-x-auto lg:block">
               <table className="w-full min-w-[820px] text-[14px]">
                 <thead>
                   <tr className="border-b border-separator text-left text-[12px] text-label-2">
@@ -300,8 +300,8 @@ export function PortfolioView() {
               </table>
             </div>
 
-            {/* Cards on phones */}
-            <ul className="md:hidden">
+            {/* Cards on phones and tablets */}
+            <ul className="lg:hidden">
               {summary.rows.map((r) => (
                 <li key={r.position.id} className="border-b border-separator py-3 last:border-b-0">
                   <div className="flex items-start justify-between gap-3">
@@ -380,7 +380,7 @@ export function PortfolioView() {
 
 function RowActions({ row, onEdit, onRemove, alwaysVisible }: { row: HoldingRow; onEdit: () => void; onRemove: () => void; alwaysVisible?: boolean }) {
   const btn = cn(
-    "press flex h-7 w-7 items-center justify-center rounded-full bg-fill text-label-2 transition-opacity hover:bg-fill-hover hover:text-foreground focus-visible:opacity-100",
+    "press flex h-9 w-9 md:h-7 md:w-7 items-center justify-center rounded-full bg-fill text-label-2 transition-opacity hover:bg-fill-hover hover:text-foreground focus-visible:opacity-100",
     !alwaysVisible && "opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100",
   )
   return (

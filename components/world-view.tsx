@@ -69,7 +69,7 @@ export function WorldView() {
         </div>
         <div className={tile}>
           <span className={tileLabel}>Next to open</span>
-          <span className="display truncate text-[21px] font-bold">{next?.m.name ?? "—"}</span>
+          <span className="display text-[21px] font-bold leading-tight">{next?.m.name ?? "—"}</span>
           <span className="num truncate text-[12px] text-label-2">{next ? `${next.status.detail} · ${next.m.exchange}` : ""}</span>
         </div>
         <div className={tile}>
@@ -82,7 +82,7 @@ export function WorldView() {
         </div>
         <div className={tile}>
           <span className={tileLabel}>Biggest move</span>
-          <span className="display truncate text-[21px] font-bold">
+          <span className="display text-[21px] font-bold leading-tight">
             {biggest ? (
               <>
                 {biggest.m.name} <span className={biggest.q!.direction === "down" ? "text-down" : "text-up"}>{formatPercent(biggest.q!.changePercent)}</span>
@@ -95,7 +95,7 @@ export function WorldView() {
         </div>
       </div>
 
-      <section aria-label="All markets" className="overflow-x-auto rounded-[22px] bg-surface px-3 pb-3 pt-1">
+      <section aria-label="All markets" className="relative overflow-x-auto rounded-[22px] bg-surface px-3 pb-3 pt-1">
         <table className="w-full min-w-[860px] border-collapse text-[14px]">
           <thead>
             <tr className="text-[12px] text-label-2">

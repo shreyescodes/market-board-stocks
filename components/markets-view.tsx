@@ -150,7 +150,7 @@ export function MarketsView() {
       <div className="flex items-baseline justify-between px-1 pt-2">
         <h2 className="display text-[22px] font-bold">What&apos;s moving</h2>
       </div>
-      <div className="flex flex-wrap items-stretch gap-4">
+      <div className="flex flex-col gap-4">
         <SectorsCard board={board} quotes={quotes} caps={caps} />
         <MoversCard
           market={market}
@@ -330,7 +330,7 @@ function MarketHeader({
           })}
           <button
             onClick={onIndexes}
-            className="press flex items-center gap-1.5 self-start rounded-full text-[13px] font-semibold text-tint outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
+            className="press -my-2 flex items-center gap-1.5 self-start rounded-full py-2 text-[13px] font-semibold text-tint outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
           >
             <ListFilter className="h-4 w-4" aria-hidden /> All {new Set(indexesFor(market.id).map((i) => i.symbol)).size} indexes
           </button>
@@ -394,17 +394,17 @@ function SectorsCard({ board, quotes, caps }: { board: Board; quotes: Record<str
   }, [board.sectors, quotes, caps])
 
   return (
-    <section aria-labelledby="sectors" className="flex min-w-0 flex-[6_1_440px] flex-col gap-3.5 rounded-[22px] bg-surface p-5">
+    <section aria-labelledby="sectors" className="flex min-w-0 flex-col gap-3.5 rounded-[22px] bg-surface p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 id="sectors" className="text-[17px] font-semibold">
           Sectors
         </h3>
         <span className="text-[12px] text-label-2">{board.sectors ? `${board.sectors.note} · best to worst` : "Cap-weighted from the largest listings · best to worst"}</span>
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
         {tiles.length
           ? tiles.map(({ key, ...t }) => <SectorTile key={key} {...t} />)
-          : Array.from({ length: 8 }, (_, i) => <div key={i} className="h-[74px] animate-pulse rounded-[14px] bg-fill" />)}
+          : Array.from({ length: 12 }, (_, i) => <div key={i} className="h-[78px] animate-pulse rounded-[14px] bg-fill" />)}
       </div>
     </section>
   )
@@ -418,7 +418,7 @@ function SectorTile({ name, pct, label, href }: { name: string; pct: number | nu
   const style = { background: has ? `color-mix(in srgb, ${fill} ${strength}%, var(--surface))` : "var(--fill)" }
   const body = (
     <>
-      <span className="truncate text-[13px] font-medium">{name}</span>
+      <span className="line-clamp-2 text-[13px] font-medium leading-tight">{name}</span>
       <span className="flex items-baseline justify-between gap-2">
         <span className="num text-[19px] font-bold">{has ? formatPercent(pct) : "—"}</span>
         <span className="truncate text-[11px] text-label-2" title={label}>
@@ -427,7 +427,7 @@ function SectorTile({ name, pct, label, href }: { name: string; pct: number | nu
       </span>
     </>
   )
-  const className = "flex h-[74px] flex-col justify-between rounded-[14px] px-3 py-2.5"
+  const className = "flex min-h-[78px] flex-col justify-between gap-1.5 rounded-[14px] px-3 py-2.5"
   return href ? (
     <Link href={href} title={label} className={cn(className, "press outline-none focus-visible:ring-2 focus-visible:ring-tint/60")} style={style} aria-label={`${name} ${has ? formatPercent(pct) : "no data"}`}>
       {body}
@@ -468,15 +468,48 @@ function MoversCard({
       active: stocks.filter((s) => s.volume).sort((a, b) => b.price * b.volume! - a.price * a.volume!),
     }
   }, [screened, caps])
-  const list = lists?.[tab]
+  const titles: Record<MoverTab, string> = { gainers: "Top gainers", losers: "Top losers", active: "Most active" }
+  const empty: Record<MoverTab, string> = { gainers: "No gainers today", losers: "No decliners today", active: "No trading data" }
+
+  const body = (t: MoverTab) =>
+    !lists ? (
+      <p className="py-8 text-center text-[13px] text-label-2">{failed ? "Movers unavailable right now" : "Loading…"}</p>
+    ) : lists[t].length === 0 ? (
+      <p className="py-8 text-center text-[13px] text-label-2">{empty[t]}</p>
+    ) : (
+      <ul>
+        {lists[t].slice(0, 5).map((s) => (
+          <li key={s.symbol} className="border-t border-separator first:border-t-0">
+            <Link
+              href={symbolHref(s.symbol)}
+              className="-mx-2 flex items-center gap-3 rounded-[12px] px-2 py-2.5 outline-none transition-colors hover:bg-selection/60 focus-visible:ring-2 focus-visible:ring-tint/60"
+            >
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-[15px] font-semibold">{shortName(s.name)}</span>
+                <span className="num truncate text-[12px] text-label-2">
+                  {displaySymbol(s.symbol)}
+                  {s.volume ? ` · ${formatMoney(s.price * s.volume, s.currency, { compact: true })} traded` : ""}
+                </span>
+              </span>
+              <span className="num flex shrink-0 flex-col items-end gap-1">
+                <span className="text-[14px] font-medium">{formatMoney(s.price, s.currency)}</span>
+                <ChangeBadge stock={s} />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    )
 
   return (
-    <section aria-labelledby="movers" className="flex min-w-0 flex-[5_1_380px] flex-col gap-3 rounded-[22px] bg-surface p-5">
+    <section aria-labelledby="movers" className="flex flex-col gap-3 rounded-[22px] bg-surface p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id="movers" className="text-[17px] font-semibold">
           Movers
         </h3>
+        {/* One list at a time until there is room for all three side by side (1280px and up) */}
         <Segmented
+          className="xl:hidden"
           label="Movers list"
           value={tab}
           onChange={setTab}
@@ -486,48 +519,20 @@ function MoversCard({
             { value: "active", label: "Most active" },
           ]}
         />
+        <span className="hidden text-[12px] text-label-2 xl:inline">
+          {screened ? "Yahoo Finance screeners · refreshed every minute" : `Ranked among the ${capCount} largest ${market.exchange} listings`}
+        </span>
       </div>
-      {!list ? (
-        <p className="py-10 text-center text-[13px] text-label-2">{failed ? "Movers unavailable right now" : "Loading…"}</p>
-      ) : list.length === 0 ? (
-        <p className="py-10 text-center text-[13px] text-label-2">{tab === "gainers" ? "No gainers today" : tab === "losers" ? "No decliners today" : "No trading data"}</p>
-      ) : (
-        <table className="w-full border-collapse text-[14px]">
-          <thead>
-            <tr className="text-[12px] text-label-2">
-              <th scope="col" className="pb-2 text-left font-semibold">Company</th>
-              <th scope="col" className="pb-2 text-right font-semibold">Last</th>
-              <th scope="col" className="hidden pb-2 text-right font-semibold sm:table-cell">Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.slice(0, 6).map((s) => (
-              <tr key={s.symbol} className="border-t border-separator">
-                <td className="max-w-0 py-2.5 pr-3">
-                  <Link href={symbolHref(s.symbol)} className="block rounded-[8px] outline-none focus-visible:ring-2 focus-visible:ring-tint/60">
-                    <span className="block truncate font-semibold">{shortName(s.name)}</span>
-                    <span className="num block truncate text-[12px] text-label-2">
-                      {displaySymbol(s.symbol)}
-                      {s.volume ? ` · ${formatMoney(s.price * s.volume, s.currency, { compact: true })} traded` : ""}
-                    </span>
-                  </Link>
-                </td>
-                <td className="num py-2.5 text-right">
-                  {formatMoney(s.price, s.currency)}
-                  {/* Phones: the change sits under the price so the company name keeps its room */}
-                  <span className="mt-1 block sm:hidden">
-                    <ChangeBadge stock={s} />
-                  </span>
-                </td>
-                <td className="hidden py-2.5 pl-3 text-right sm:table-cell">
-                  <ChangeBadge stock={s} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      <p className="mt-auto text-[12px] text-label-2">
+      <div className="xl:hidden">{body(tab)}</div>
+      <div className="hidden gap-8 xl:grid xl:grid-cols-3">
+        {(["gainers", "losers", "active"] as const).map((t) => (
+          <div key={t} className="min-w-0">
+            <h4 className="pb-1.5 text-[13px] font-semibold text-label-2">{titles[t]}</h4>
+            {body(t)}
+          </div>
+        ))}
+      </div>
+      <p className="text-[12px] text-label-2 xl:hidden">
         {screened ? "Yahoo Finance screeners · refreshed every minute" : `Ranked among the ${capCount} largest ${market.exchange} listings`}
       </p>
     </section>
@@ -548,7 +553,7 @@ function WatchlistStrip() {
         <h2 id="watchlist-strip" className="text-[17px] font-semibold">
           {activeWatchlist.name}
         </h2>
-        <Link href="/watchlists" className="flex items-center gap-0.5 text-[13px] font-semibold text-tint outline-none focus-visible:ring-2 focus-visible:ring-tint/60">
+        <Link href="/watchlists" className="-my-2 flex items-center gap-0.5 py-2 text-[13px] font-semibold text-tint outline-none focus-visible:ring-2 focus-visible:ring-tint/60">
           Open <ChevronRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
@@ -562,9 +567,8 @@ function WatchlistStrip() {
               href={symbolHref(s)}
               className="press flex min-w-[140px] flex-col gap-2 rounded-[14px] bg-surface-2 p-3 outline-none focus-visible:ring-2 focus-visible:ring-tint/60"
             >
-              <span className="flex items-baseline justify-between gap-2">
-                <span className="truncate text-[14px] font-semibold">{q ? shortName(q.name) : displaySymbol(s)}</span>
-                <span className="shrink-0 text-[11px] text-label-2">{displaySymbol(s)}</span>
+              <span className="truncate text-[14px] font-semibold" title={displaySymbol(s)}>
+                {q ? shortName(q.name) : displaySymbol(s)}
               </span>
               <Sparkline points={spark?.points ?? []} baseline={spark?.previousClose ?? q?.prevClose} height={26} />
               <span className="num flex justify-between text-[13px]">

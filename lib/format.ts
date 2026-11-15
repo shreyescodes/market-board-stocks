@@ -113,6 +113,9 @@ export function shortName(name?: string | null) {
   const cleaned = name
     .replace(/,?\s+(Inc\.?|Incorporated|Corporation|Corp\.?|Limited|Ltd\.?|plc|PLC|N\.V\.|S\.A\.|SE|AG|Co\.,?\s*Ltd\.?|Company Limited)$/i, "")
     .replace(/\s+\(The\)$/i, "")
+    // "The Walt Disney Company" → "Walt Disney", the way people say it
+    .replace(/^The\s+(.+?)(\s+Company)?$/, "$1")
+    .replace(/\s+Company$/, "")
     .trim()
   return cleaned || name
 }
