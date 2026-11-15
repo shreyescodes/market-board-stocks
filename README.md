@@ -281,3 +281,7 @@ lib/
 - **Portfolio cost basis** is converted to USD at today's exchange rate, not the rate on the day you bought. Positions are a single average cost per symbol, not individual lots, and there are no realized gains, dividends or taxes. It is a tracker, not a brokerage record.
 - **Movers outside the US come from a fixed list of large caps,** because Yahoo's screeners only cover US listings. A small-cap surge in those markets won't appear.
 - **Government bond yields are US-only,** because Yahoo carries no other sovereign yields.
+
+## License
+
+[MIT](LICENSE). Market data comes from Yahoo Finance and is subject to its terms; this project is not affiliated with Yahoo.
