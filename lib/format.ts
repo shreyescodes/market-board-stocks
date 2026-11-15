@@ -106,3 +106,16 @@ export function formatAge(ms: number) {
   const h = Math.round(m / 60)
   return h < 24 ? `${h} hr ago` : `${Math.round(h / 24)} d ago`
 }
+
+/** Company names without legal suffixes: "Eicher Motors Limited" → "Eicher Motors", "Apple Inc." → "Apple" */
+export function shortName(name?: string | null) {
+  if (!name) return ""
+  const cleaned = name
+    .replace(/,?\s+(Inc\.?|Incorporated|Corporation|Corp\.?|Limited|Ltd\.?|plc|PLC|N\.V\.|S\.A\.|SE|AG|Co\.,?\s*Ltd\.?|Company Limited)$/i, "")
+    .replace(/\s+\(The\)$/i, "")
+    .trim()
+  return cleaned || name
+}
+
+/** Ticker without the exchange suffix where it reads cleanly: "RELIANCE.NS" → "RELIANCE"; numeric codes keep theirs */
+export const displaySymbol = (s: string) => (/^\d/.test(s) ? s : s.replace(/\.[A-Z]{1,3}$/, ""))
