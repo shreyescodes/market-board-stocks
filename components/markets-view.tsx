@@ -497,7 +497,7 @@ function MoversCard({
             <tr className="text-[12px] text-label-2">
               <th scope="col" className="pb-2 text-left font-semibold">Company</th>
               <th scope="col" className="pb-2 text-right font-semibold">Last</th>
-              <th scope="col" className="pb-2 text-right font-semibold">Change</th>
+              <th scope="col" className="hidden pb-2 text-right font-semibold sm:table-cell">Change</th>
             </tr>
           </thead>
           <tbody>
@@ -512,16 +512,15 @@ function MoversCard({
                     </span>
                   </Link>
                 </td>
-                <td className="num py-2.5 text-right">{formatMoney(s.price, s.currency)}</td>
-                <td className="py-2.5 pl-3 text-right">
-                  <span
-                    className={cn(
-                      "num inline-block min-w-[66px] rounded-[8px] px-2 py-0.5 text-right text-[13px] font-semibold",
-                      s.direction === "up" ? "bg-up-soft text-up" : s.direction === "down" ? "bg-down-soft text-down" : "bg-fill text-label-2",
-                    )}
-                  >
-                    {formatPercent(s.changePercent)}
+                <td className="num py-2.5 text-right">
+                  {formatMoney(s.price, s.currency)}
+                  {/* Phones: the change sits under the price so the company name keeps its room */}
+                  <span className="mt-1 block sm:hidden">
+                    <ChangeBadge stock={s} />
                   </span>
+                </td>
+                <td className="hidden py-2.5 pl-3 text-right sm:table-cell">
+                  <ChangeBadge stock={s} />
                 </td>
               </tr>
             ))}
@@ -660,5 +659,18 @@ function ContextRow({ row, quotes, local, failed }: { row: Row; quotes: Record<s
         </span>
       </Link>
     </li>
+  )
+}
+
+function ChangeBadge({ stock: s }: { stock: Stock }) {
+  return (
+    <span
+      className={cn(
+        "num inline-block min-w-[66px] rounded-[8px] px-2 py-0.5 text-right text-[13px] font-semibold",
+        s.direction === "up" ? "bg-up-soft text-up" : s.direction === "down" ? "bg-down-soft text-down" : "bg-fill text-label-2",
+      )}
+    >
+      {formatPercent(s.changePercent)}
+    </span>
   )
 }
