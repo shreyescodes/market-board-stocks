@@ -142,7 +142,7 @@ export function StockDetails({ stock }: StockDetailsProps) {
       e.key === "Home" ? 0 : e.key === "End" ? TIMEFRAMES.length - 1 : (index + dir + TIMEFRAMES.length) % TIMEFRAMES.length
     setTimeframe(TIMEFRAMES[next])
     tabRefs.current[next]?.focus()
-  }, [])
+  }, [setTimeframe])
 
   // During the regular session, a quote timestamp more than a few minutes old means the feed is lagging
   const [nowMs, setNowMs] = useState(() => Date.now())
